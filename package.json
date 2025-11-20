@@ -1,6 +1,6 @@
 {
   "name": "aws-dynamodb-vscode-extension",
-  "displayName": "AWS DynamoDB Manager",
+  "displayName": "Aws DynamoDB",
   "description": "Manage & Monitor your AWS DynamoDB Tables - View table details, keys, capacity, indexes, and more",
   "version": "1.0.0",
   "publisher": "NecatiARSLAN",

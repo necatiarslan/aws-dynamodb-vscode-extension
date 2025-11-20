@@ -49,7 +49,7 @@ When you expand a DynamoDB table in the tree view, you'll see:
 ## 🚀 Getting Started
 
 ### 1. Install the Extension
-Search for "AWS DynamoDB Manager" in the VSCode Extensions marketplace and click Install.
+Search for "Aws DynamoDB" in the VSCode Extensions marketplace and click Install.
 
 ### 2. Configure AWS Credentials
 Follow the AWS credentials setup guide below.
