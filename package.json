@@ -1,0 +1,352 @@
+{
+  "name": "aws-dynamodb-vscode-extension",
+  "displayName": "AWS DynamoDB Manager",
+  "description": "Manage & Monitor your AWS DynamoDB Tables - View table details, keys, capacity, indexes, and more",
+  "version": "1.0.0",
+  "publisher": "NecatiARSLAN",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/necatiarslan/aws-dynamodb-vscode-extension"
+  },
+  "icon": "media/aws-dynamodb-logo-extension.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "AWS",
+    "Dynamodb"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "DynamodbTreeView.Refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "DynamodbTreeView.Filter",
+        "title": "Filter",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "DynamodbTreeView.ShowOnlyFavorite",
+        "title": "Show Only Favorite",
+        "icon": "$(bookmark)"
+      },
+      {
+        "command": "DynamodbTreeView.ShowHiddenNodes",
+        "title": "Show Hidden Nodes",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "DynamodbTreeView.AddToFav",
+        "title": "Fav"
+      },
+      {
+        "command": "DynamodbTreeView.DeleteFromFav",
+        "title": "UnFav"
+      },
+      {
+        "command": "DynamodbTreeView.HideNode",
+        "title": "Hide"
+      },
+      {
+        "command": "DynamodbTreeView.UnHideNode",
+        "title": "UnHide"
+      },
+      {
+        "command": "DynamodbTreeView.AddDynamodb",
+        "title": "Add Dynamodb",
+        "icon": "$(add)"
+      },
+      {
+        "command": "DynamodbTreeView.RemoveDynamodb",
+        "title": "Remove Dynamodb"
+      },
+      {
+        "command": "DynamodbTreeView.Goto",
+        "title": "Goto Aws Console"
+      },
+      {
+        "command": "DynamodbTreeView.SelectAwsProfile",
+        "title": "Select Aws Profile",
+        "icon": "$(account)"
+      },
+      {
+        "command": "DynamodbTreeView.TriggerDynamodb",
+        "title": "Trigger",
+        "icon": "$(run)"
+      },
+      {
+        "command": "DynamodbTreeView.DynamodbView",
+        "title": "Dynamodb View",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "DynamodbTreeView.ViewLatestLog",
+        "title": "Latest Logs",
+        "icon": "$(output)"
+      },
+      {
+        "command": "DynamodbTreeView.AddPayloadPath",
+        "title": "Add Payload File",
+        "icon": "$(add)"
+      },
+      {
+        "command": "DynamodbTreeView.RemovePayloadPath",
+        "title": "Remove Paylod File",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "DynamodbTreeView.RefreshLogs",
+        "title": "Refresh Logs",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "DynamodbTreeView.ViewLog",
+        "title": "View Log",
+        "icon": "$(output)"
+      },
+      {
+        "command": "DynamodbTreeView.ViewResponsePayload",
+        "title": "View Payload",
+        "icon": "$(output)"
+      },
+      {
+        "command": "DynamodbTreeView.SetCodePath",
+        "title": "Set Code Path",
+        "icon": "$(folder-library)"
+      },
+      {
+        "command": "DynamodbTreeView.UpdateDynamodbCodes",
+        "title": "Update Dynamodb Codes",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "DynamodbTreeView.UnsetCodePath",
+        "title": "Unset Code Path",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "DynamodbTreeView.PrintDynamodb",
+        "title": "View Table Details",
+        "icon": "$(lightbulb)"
+      },
+      {
+        "command": "DynamodbTreeView.TestAwsConnection",
+        "title": "Test Aws Connection"
+      },
+      {
+        "command": "DynamodbTreeView.UpdateAwsEndPoint",
+        "title": "Update Aws EndPoint"
+      },
+      {
+        "command": "DynamodbTreeView.Donate",
+        "title": "Donate"
+      },
+      {
+        "command": "DynamodbTreeView.BugAndNewFeature",
+        "title": "Bug and New Feature"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "DynamodbTreeView.ShowOnlyFavorite",
+          "when": "view == DynamodbTreeView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "DynamodbTreeView.ShowHiddenNodes",
+          "when": "view == DynamodbTreeView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "DynamodbTreeView.Filter",
+          "when": "view == DynamodbTreeView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "DynamodbTreeView.AddDynamodb",
+          "when": "view == DynamodbTreeView",
+          "group": "navigation@4"
+        },
+        {
+          "command": "DynamodbTreeView.SelectAwsProfile",
+          "when": "view == DynamodbTreeView",
+          "group": "navigation@6"
+        },
+        {
+          "command": "DynamodbTreeView.Refresh",
+          "when": "view == DynamodbTreeView",
+          "group": "navigation@7"
+        },
+        {
+          "command": "DynamodbTreeView.TestAwsConnection",
+          "when": "view == DynamodbTreeView",
+          "group": "other"
+        },
+        {
+          "command": "DynamodbTreeView.UpdateAwsEndPoint",
+          "when": "view == DynamodbTreeView",
+          "group": "other"
+        },
+        {
+          "command": "DynamodbTreeView.Donate",
+          "when": "view == DynamodbTreeView",
+          "group": "other"
+        },
+        {
+          "command": "DynamodbTreeView.BugAndNewFeature",
+          "when": "view == DynamodbTreeView",
+          "group": "other"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "DynamodbTreeView.AddToFav",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Filter"
+        },
+        {
+          "command": "DynamodbTreeView.DeleteFromFav",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Filter"
+        },
+        {
+          "command": "DynamodbTreeView.HideNode",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Filter"
+        },
+        {
+          "command": "DynamodbTreeView.UnHideNode",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Filter"
+        },
+        {
+          "command": "DynamodbTreeView.RemoveDynamodb",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Dynamodb"
+        },
+        {
+          "command": "DynamodbTreeView.Goto",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Dynamodb"
+        },
+        {
+          "command": "DynamodbTreeView.TriggerDynamodb",
+          "when": "view == DynamodbTreeView && (viewItem == Dynamodb || viewItem == TriggerConfig || viewItem == TriggerSavedPayload || viewItem == TriggerWithPayload || viewItem == TriggerFilePayload || viewItem == TriggerNoPayload)",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.ViewLatestLog",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.PrintDynamodb",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.SetCodePath",
+          "when": "view == DynamodbTreeView && (viewItem == Code || viewItem == CodePath)",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.UnsetCodePath",
+          "when": "view == DynamodbTreeView && (viewItem == Code || viewItem == CodePath)",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.UpdateDynamodbCodes",
+          "when": "view == DynamodbTreeView && (viewItem == Code || viewItem == CodePath)",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.AddPayloadPath",
+          "when": "view == DynamodbTreeView && viewItem == TriggerGroup",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.RemovePayloadPath",
+          "when": "view == DynamodbTreeView && viewItem == TriggerFilePayload",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.RefreshLogs",
+          "when": "view == DynamodbTreeView && viewItem == LogGroup",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.ViewLog",
+          "when": "view == DynamodbTreeView && viewItem == LogStream",
+          "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.ViewResponsePayload",
+          "when": "view == DynamodbTreeView && viewItem == ResponsePayload",
+          "group": "inline"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aws-dynamodb-vscode-extension",
+          "title": "Aws Dynamodb",
+          "icon": "media/aws-dynamodb-logo-activitybar.png"
+        }
+      ]
+    },
+    "views": {
+      "aws-dynamodb-vscode-extension": [
+        {
+          "id": "DynamodbTreeView",
+          "name": "Aws Dynamodb",
+          "icon": "media/aws-dynamodb-logo-activitybar.png"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "DynamodbTreeView",
+        "contents": "Please click [+] to add your DynamoDB Tables. \n [Add DynamoDB Table](command:DynamodbTreeView.AddDynamodb) \n Leave table name empty to get all your tables. You can enter table name partially. \n If you cannot connect after a while, check your AWS Credentials, Network and Proxy settings. \n\n\n\n To access AWS, you need to configure AWS credentials. \n For more details on AWS Credentials [Click Here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) \n For a YouTube Tutorial [Click Here](https://www.youtube.com/watch?v=SON8sY1iOBU) \n [Update AWS Endpoint](command:DynamodbTreeView.UpdateAwsEndPoint)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.2",
+    "@types/node": "^18.11.3",
+    "@types/vscode": "^1.71.0",
+    "@vscode/test-electron": "^2.1.5",
+    "eslint": "^8.18.0",
+    "glob": "^11.0.1",
+    "mocha": "^11.1.0",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch-logs": "^3.750.0",
+    "@aws-sdk/client-dynamodb": "^3.934.0",
+    "@aws-sdk/client-iam": "^3.750.0",
+    "@aws-sdk/client-sts": "^3.750.0",
+    "@aws-sdk/credential-providers": "^3.750.0",
+    "@vscode-elements/elements": "^1.13.1",
+    "@vscode/codicons": "^0.0.36",
+    "archiver": "^7.0.1",
+    "tmp": "^0.2.3"
+  }
+}
