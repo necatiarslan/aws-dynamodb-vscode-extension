@@ -133,6 +133,7 @@ export class DynamodbTreeDataProvider implements vscode.TreeDataProvider<Dynamod
 		let tableInfoItem = new DynamodbTreeItem("Table Info", TreeItemType.TableInfo);
 		tableInfoItem.Dynamodb = treeItem.Dynamodb;
 		tableInfoItem.Region = treeItem.Region;
+		tableInfoItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
 		tableInfoItem.Parent = treeItem;
 		treeItem.Children.push(tableInfoItem);
 
@@ -190,12 +191,45 @@ export class DynamodbTreeDataProvider implements vscode.TreeDataProvider<Dynamod
 				}
 			}
 
-			// Update Table Info node
-			const tableInfoNode = node.Children.find(c => c.TreeItemType === TreeItemType.TableInfo);
-			if (tableInfoNode) {
-				const sizeInMB = details.tableSize ? (details.tableSize / (1024 * 1024)).toFixed(2) : '0';
-				tableInfoNode.label = `Table Info: Size ${sizeInMB} MB, Items ${details.itemCount || 0}, Class ${details.tableClass}, Status ${details.tableStatus}`;
-			}
+			// Update Table Info node with children
+		const tableInfoNode = node.Children.find(c => c.TreeItemType === TreeItemType.TableInfo);
+		if (tableInfoNode) {
+			tableInfoNode.Children = [];
+			tableInfoNode.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+			
+			// Add Size node
+			const sizeInMB = details.tableSize ? (details.tableSize / (1024 * 1024)).toFixed(2) : '0';
+			const sizeNode = new DynamodbTreeItem(
+				`Size: ${sizeInMB} MB`,
+				TreeItemType.TableSize
+			);
+			sizeNode.Parent = tableInfoNode;
+			tableInfoNode.Children.push(sizeNode);
+			
+			// Add Item Count node
+			const itemCountNode = new DynamodbTreeItem(
+				`Item Count: ${details.itemCount || 0}`,
+				TreeItemType.ItemCount
+			);
+			itemCountNode.Parent = tableInfoNode;
+			tableInfoNode.Children.push(itemCountNode);
+			
+			// Add Table Class node
+			const tableClassNode = new DynamodbTreeItem(
+				`Table Class: ${details.tableClass || 'STANDARD'}`,
+				TreeItemType.TableClass
+			);
+			tableClassNode.Parent = tableInfoNode;
+			tableInfoNode.Children.push(tableClassNode);
+			
+			// Add Table Status node
+			const tableStatusNode = new DynamodbTreeItem(
+				`Status: ${details.tableStatus || 'UNKNOWN'}`,
+				TreeItemType.TableStatus
+			);
+			tableStatusNode.Parent = tableInfoNode;
+			tableInfoNode.Children.push(tableStatusNode);
+		}
 
 			// Populate Indexes node
 			const indexesNode = node.Children.find(c => c.TreeItemType === TreeItemType.Indexes);

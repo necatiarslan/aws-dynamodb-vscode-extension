@@ -72,52 +72,12 @@ export function activate(context: vscode.ExtensionContext) {
 		treeView.BugAndNewFeature();
 	});
 
-	vscode.commands.registerCommand('DynamodbTreeView.TriggerDynamodb', (node: DynamodbTreeItem) => {
-		treeView.TriggerDynamodb(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.ViewLatestLog', (node: DynamodbTreeItem) => {
-		treeView.ViewLatestLog(node);
-	});
-
 	vscode.commands.registerCommand('DynamodbTreeView.DynamodbView', (node: DynamodbTreeItem) => {
 		treeView.DynamodbView(node);
 	});
 
 	vscode.commands.registerCommand('DynamodbTreeView.PrintDynamodb', async (node: DynamodbTreeItem) => {
 		await treeView.PrintDynamodb(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.UpdateDynamodbCodes', async (node: DynamodbTreeItem) => {
-		await treeView.UpdateDynamodbCodes(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.SetCodePath', async (node: DynamodbTreeItem) => {
-		await treeView.SetCodePath(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.UnsetCodePath', async (node: DynamodbTreeItem) => {
-		await treeView.UnsetCodePath(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.ViewLog', async (node: DynamodbTreeItem) => {
-		await treeView.ViewLog(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.ViewResponsePayload', async (node: DynamodbTreeItem) => {
-		await treeView.ViewResponsePayload(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.RefreshLogs', async (node: DynamodbTreeItem) => {
-		await treeView.RefreshLogStreams(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.RemovePayloadPath', async (node: DynamodbTreeItem) => {
-		await treeView.RemovePayloadPath(node);
-	});
-
-	vscode.commands.registerCommand('DynamodbTreeView.AddPayloadPath', async (node: DynamodbTreeItem) => {
-		await treeView.AddPayloadPath(node);
 	});
 
 	vscode.commands.registerCommand('DynamodbTreeView.CreateTable', async () => {

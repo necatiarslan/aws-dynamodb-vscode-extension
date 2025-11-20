@@ -11,6 +11,11 @@
   - **Capacity Mode**: View billing mode (On-Demand or Provisioned) and throughput
   - **Table Statistics**: Size, item count, table class, and status
   - **Indexes**: Browse all Global and Local Secondary Indexes with their key schemas
+- **Create Table**: Create new DynamoDB tables through UI
+- **Delete Table**: Delete tables
+- **Edit Capacity**: Edit table capacity settings
+- **View and Edit Items**:View and edit table items
+- **Query and Scan Table**: Query and scan operations
 - **Add/Remove Tables**: Add tables from any region to your workspace
 - **AWS Profile Support**: Work with multiple AWS profiles seamlessly
 - **Filter Tables**: Quickly find tables by name
@@ -116,11 +121,6 @@ To report bugs or request new features:
 ## 📝 Roadmap
 
 ### Coming Soon
-- Create new DynamoDB tables through UI
-- Delete tables
-- Edit table capacity settings
-- View and edit table items
-- Query and scan operations
 - Add/remove indexes
 - Table backup and restore
 - DynamoDB Streams integration

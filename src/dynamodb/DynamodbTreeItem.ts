@@ -156,6 +156,26 @@ export class DynamodbTreeItem extends vscode.TreeItem {
 			this.iconPath = new vscode.ThemeIcon('symbol-array');
 			this.contextValue = "Index"
 		}
+		else if(this.TreeItemType === TreeItemType.TableSize)
+		{
+			this.iconPath = new vscode.ThemeIcon('database');
+			this.contextValue = "TableSize"
+		}
+		else if(this.TreeItemType === TreeItemType.ItemCount)
+		{
+			this.iconPath = new vscode.ThemeIcon('symbol-number');
+			this.contextValue = "ItemCount"
+		}
+		else if(this.TreeItemType === TreeItemType.TableClass)
+		{
+			this.iconPath = new vscode.ThemeIcon('archive');
+			this.contextValue = "TableClass"
+		}
+		else if(this.TreeItemType === TreeItemType.TableStatus)
+		{
+			this.iconPath = new vscode.ThemeIcon('pulse');
+			this.contextValue = "TableStatus"
+		}
 		else
 		{
 			this.iconPath = new vscode.ThemeIcon('circle-outline');
@@ -239,5 +259,11 @@ export enum TreeItemType{
 	Capacity= 17,
 	TableInfo= 18,
 	Indexes= 19,
-	Index= 20
+	Index= 20,
+	TableSize= 21,
+	ItemCount= 22,
+	TableClass= 23,
+	TableStatus= 24,
+	ReadCapacity= 25,
+	WriteCapacity= 26
 }

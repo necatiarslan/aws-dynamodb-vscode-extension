@@ -66,7 +66,7 @@
       },
       {
         "command": "DynamodbTreeView.RemoveDynamodb",
-        "title": "Remove Dynamodb"
+        "title": "Remove Table"
       },
       {
         "command": "DynamodbTreeView.Goto",
@@ -78,59 +78,9 @@
         "icon": "$(account)"
       },
       {
-        "command": "DynamodbTreeView.TriggerDynamodb",
-        "title": "Trigger",
-        "icon": "$(run)"
-      },
-      {
         "command": "DynamodbTreeView.DynamodbView",
         "title": "Dynamodb View",
         "icon": "$(preview)"
-      },
-      {
-        "command": "DynamodbTreeView.ViewLatestLog",
-        "title": "Latest Logs",
-        "icon": "$(output)"
-      },
-      {
-        "command": "DynamodbTreeView.AddPayloadPath",
-        "title": "Add Payload File",
-        "icon": "$(add)"
-      },
-      {
-        "command": "DynamodbTreeView.RemovePayloadPath",
-        "title": "Remove Paylod File",
-        "icon": "$(trash)"
-      },
-      {
-        "command": "DynamodbTreeView.RefreshLogs",
-        "title": "Refresh Logs",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "DynamodbTreeView.ViewLog",
-        "title": "View Log",
-        "icon": "$(output)"
-      },
-      {
-        "command": "DynamodbTreeView.ViewResponsePayload",
-        "title": "View Payload",
-        "icon": "$(output)"
-      },
-      {
-        "command": "DynamodbTreeView.SetCodePath",
-        "title": "Set Code Path",
-        "icon": "$(folder-library)"
-      },
-      {
-        "command": "DynamodbTreeView.UpdateDynamodbCodes",
-        "title": "Update Dynamodb Codes",
-        "icon": "$(cloud-upload)"
-      },
-      {
-        "command": "DynamodbTreeView.UnsetCodePath",
-        "title": "Unset Code Path",
-        "icon": "$(trash)"
       },
       {
         "command": "DynamodbTreeView.PrintDynamodb",
@@ -279,58 +229,8 @@
           "group": "Dynamodb"
         },
         {
-          "command": "DynamodbTreeView.TriggerDynamodb",
-          "when": "view == DynamodbTreeView && (viewItem == Dynamodb || viewItem == TriggerConfig || viewItem == TriggerSavedPayload || viewItem == TriggerWithPayload || viewItem == TriggerFilePayload || viewItem == TriggerNoPayload)",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.ViewLatestLog",
-          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
-          "group": "inline"
-        },
-        {
           "command": "DynamodbTreeView.PrintDynamodb",
           "when": "view == DynamodbTreeView && viewItem == Dynamodb",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.SetCodePath",
-          "when": "view == DynamodbTreeView && (viewItem == Code || viewItem == CodePath)",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.UnsetCodePath",
-          "when": "view == DynamodbTreeView && (viewItem == Code || viewItem == CodePath)",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.UpdateDynamodbCodes",
-          "when": "view == DynamodbTreeView && (viewItem == Code || viewItem == CodePath)",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.AddPayloadPath",
-          "when": "view == DynamodbTreeView && viewItem == TriggerGroup",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.RemovePayloadPath",
-          "when": "view == DynamodbTreeView && viewItem == TriggerFilePayload",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.RefreshLogs",
-          "when": "view == DynamodbTreeView && viewItem == LogGroup",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.ViewLog",
-          "when": "view == DynamodbTreeView && viewItem == LogStream",
-          "group": "inline"
-        },
-        {
-          "command": "DynamodbTreeView.ViewResponsePayload",
-          "when": "view == DynamodbTreeView && viewItem == ResponsePayload",
           "group": "inline"
         },
         {
