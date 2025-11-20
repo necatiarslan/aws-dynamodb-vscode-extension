@@ -1,7 +1,21 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
 import { fromIni } from "@aws-sdk/credential-provider-ini";
-import { DynamoDBClient, ListTablesCommand, DescribeTableCommand, CreateTableCommand, DeleteTableCommand } from "@aws-sdk/client-dynamodb";
+import { 
+  DynamoDBClient, 
+  ListTablesCommand, 
+  DescribeTableCommand, 
+  CreateTableCommand, 
+  DeleteTableCommand,
+  QueryCommand,
+  ScanCommand,
+  PutItemCommand,
+  UpdateItemCommand,
+  DeleteItemCommand,
+  GetItemCommand,
+  UpdateTableCommand,
+  UpdateTimeToLiveCommand
+} from "@aws-sdk/client-dynamodb";
 import { CloudWatchLogsClient, OutputLogEvent } from "@aws-sdk/client-cloudwatch-logs";
 import { IAMClient } from "@aws-sdk/client-iam";
 import * as ui from "./UI";
@@ -192,6 +206,255 @@ export async function DeleteDynamodbTable(
     result.error = error;
     ui.showErrorMessage("api.DeleteDynamodbTable Error !!!", error);
     ui.logToOutput("api.DeleteDynamodbTable Error !!!", error);
+    return result;
+  }
+}
+
+export async function UpdateTableCapacity(
+  region: string,
+  tableName: string,
+  readCapacity?: number,
+  writeCapacity?: number,
+  billingMode?: string
+): Promise<MethodResult<any>> {
+  let result: MethodResult<any> = new MethodResult<any>();
+
+  try {
+    const dynamodb = await GetDynamodbClient(region);
+
+    const updateParams: any = {
+      TableName: tableName,
+    };
+
+    if (billingMode) {
+      updateParams.BillingMode = billingMode;
+      if (billingMode === 'PROVISIONED' && readCapacity && writeCapacity) {
+        updateParams.ProvisionedThroughput = {
+          ReadCapacityUnits: readCapacity,
+          WriteCapacityUnits: writeCapacity
+        };
+      }
+    } else if (readCapacity && writeCapacity) {
+      updateParams.ProvisionedThroughput = {
+        ReadCapacityUnits: readCapacity,
+        WriteCapacityUnits: writeCapacity
+      };
+    }
+
+    const command = new UpdateTableCommand(updateParams);
+    const response = await dynamodb.send(command);
+    result.result = response;
+    result.isSuccessful = true;
+    ui.showInfoMessage(`Table ${tableName} capacity updated successfully!`);
+    return result;
+  } catch (error: any) {
+    result.isSuccessful = false;
+    result.error = error;
+    ui.showErrorMessage("api.UpdateTableCapacity Error !!!", error);
+    ui.logToOutput("api.UpdateTableCapacity Error !!!", error);
+    return result;
+  }
+}
+
+export async function QueryTable(
+  region: string,
+  tableName: string,
+  keyConditionExpression: string,
+  expressionAttributeValues: any,
+  indexName?: string,
+  limit?: number
+): Promise<MethodResult<any>> {
+  let result: MethodResult<any> = new MethodResult<any>();
+
+  try {
+    const dynamodb = await GetDynamodbClient(region);
+
+    const queryParams: any = {
+      TableName: tableName,
+      KeyConditionExpression: keyConditionExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
+    };
+
+    if (indexName) {
+      queryParams.IndexName = indexName;
+    }
+
+    if (limit) {
+      queryParams.Limit = limit;
+    }
+
+    const command = new QueryCommand(queryParams);
+    const response = await dynamodb.send(command);
+    result.result = response;
+    result.isSuccessful = true;
+    return result;
+  } catch (error: any) {
+    result.isSuccessful = false;
+    result.error = error;
+    ui.showErrorMessage("api.QueryTable Error !!!", error);
+    ui.logToOutput("api.QueryTable Error !!!", error);
+    return result;
+  }
+}
+
+export async function ScanTable(
+  region: string,
+  tableName: string,
+  limit?: number,
+  filterExpression?: string,
+  expressionAttributeValues?: any
+): Promise<MethodResult<any>> {
+  let result: MethodResult<any> = new MethodResult<any>();
+
+  try {
+    const dynamodb = await GetDynamodbClient(region);
+
+    const scanParams: any = {
+      TableName: tableName,
+    };
+
+    if (limit) {
+      scanParams.Limit = limit;
+    }
+
+    if (filterExpression) {
+      scanParams.FilterExpression = filterExpression;
+    }
+
+    if (expressionAttributeValues) {
+      scanParams.ExpressionAttributeValues = expressionAttributeValues;
+    }
+
+    const command = new ScanCommand(scanParams);
+    const response = await dynamodb.send(command);
+    result.result = response;
+    result.isSuccessful = true;
+    return result;
+  } catch (error: any) {
+    result.isSuccessful = false;
+    result.error = error;
+    ui.showErrorMessage("api.ScanTable Error !!!", error);
+    ui.logToOutput("api.ScanTable Error !!!", error);
+    return result;
+  }
+}
+
+export async function GetItem(
+  region: string,
+  tableName: string,
+  key: any
+): Promise<MethodResult<any>> {
+  let result: MethodResult<any> = new MethodResult<any>();
+
+  try {
+    const dynamodb = await GetDynamodbClient(region);
+
+    const command = new GetItemCommand({
+      TableName: tableName,
+      Key: key,
+    });
+
+    const response = await dynamodb.send(command);
+    result.result = response;
+    result.isSuccessful = true;
+    return result;
+  } catch (error: any) {
+    result.isSuccessful = false;
+    result.error = error;
+    ui.showErrorMessage("api.GetItem Error !!!", error);
+    ui.logToOutput("api.GetItem Error !!!", error);
+    return result;
+  }
+}
+
+export async function PutItem(
+  region: string,
+  tableName: string,
+  item: any
+): Promise<MethodResult<any>> {
+  let result: MethodResult<any> = new MethodResult<any>();
+
+  try {
+    const dynamodb = await GetDynamodbClient(region);
+
+    const command = new PutItemCommand({
+      TableName: tableName,
+      Item: item,
+    });
+
+    const response = await dynamodb.send(command);
+    result.result = response;
+    result.isSuccessful = true;
+    ui.showInfoMessage('Item added successfully!');
+    return result;
+  } catch (error: any) {
+    result.isSuccessful = false;
+    result.error = error;
+    ui.showErrorMessage("api.PutItem Error !!!", error);
+    ui.logToOutput("api.PutItem Error !!!", error);
+    return result;
+  }
+}
+
+export async function UpdateItem(
+  region: string,
+  tableName: string,
+  key: any,
+  updateExpression: string,
+  expressionAttributeValues: any
+): Promise<MethodResult<any>> {
+  let result: MethodResult<any> = new MethodResult<any>();
+
+  try {
+    const dynamodb = await GetDynamodbClient(region);
+
+    const command = new UpdateItemCommand({
+      TableName: tableName,
+      Key: key,
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
+    });
+
+    const response = await dynamodb.send(command);
+    result.result = response;
+    result.isSuccessful = true;
+    ui.showInfoMessage('Item updated successfully!');
+    return result;
+  } catch (error: any) {
+    result.isSuccessful = false;
+    result.error = error;
+    ui.showErrorMessage("api.UpdateItem Error !!!", error);
+    ui.logToOutput("api.UpdateItem Error !!!", error);
+    return result;
+  }
+}
+
+export async function DeleteItem(
+  region: string,
+  tableName: string,
+  key: any
+): Promise<MethodResult<any>> {
+  let result: MethodResult<any> = new MethodResult<any>();
+
+  try {
+    const dynamodb = await GetDynamodbClient(region);
+
+    const command = new DeleteItemCommand({
+      TableName: tableName,
+      Key: key,
+    });
+
+    const response = await dynamodb.send(command);
+    result.result = response;
+    result.isSuccessful = true;
+    ui.showInfoMessage('Item deleted successfully!');
+    return result;
+  } catch (error: any) {
+    result.isSuccessful = false;
+    result.error = error;
+    ui.showErrorMessage("api.DeleteItem Error !!!", error);
+    ui.logToOutput("api.DeleteItem Error !!!", error);
     return result;
   }
 }

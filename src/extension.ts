@@ -120,6 +120,38 @@ export function activate(context: vscode.ExtensionContext) {
 		await treeView.AddPayloadPath(node);
 	});
 
+	vscode.commands.registerCommand('DynamodbTreeView.CreateTable', async () => {
+		await treeView.CreateTable();
+	});
+
+	vscode.commands.registerCommand('DynamodbTreeView.DeleteTable', async (node: DynamodbTreeItem) => {
+		await treeView.DeleteTable(node);
+	});
+
+	vscode.commands.registerCommand('DynamodbTreeView.EditCapacity', async (node: DynamodbTreeItem) => {
+		await treeView.EditCapacity(node);
+	});
+
+	vscode.commands.registerCommand('DynamodbTreeView.QueryTable', async (node: DynamodbTreeItem) => {
+		await treeView.QueryTable(node);
+	});
+
+	vscode.commands.registerCommand('DynamodbTreeView.ScanTable', async (node: DynamodbTreeItem) => {
+		await treeView.ScanTable(node);
+	});
+
+	vscode.commands.registerCommand('DynamodbTreeView.AddItem', async (node: DynamodbTreeItem) => {
+		await treeView.AddItem(node);
+	});
+
+	vscode.commands.registerCommand('DynamodbTreeView.EditItem', async (node: DynamodbTreeItem) => {
+		await treeView.EditItem(node);
+	});
+
+	vscode.commands.registerCommand('DynamodbTreeView.DeleteItem', async (node: DynamodbTreeItem) => {
+		await treeView.DeleteItem(node);
+	});
+
 	ui.logToOutput('Aws Dynamodb Extension activation completed');
 }
 

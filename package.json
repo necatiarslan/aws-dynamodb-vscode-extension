@@ -152,6 +152,46 @@
       {
         "command": "DynamodbTreeView.BugAndNewFeature",
         "title": "Bug and New Feature"
+      },
+      {
+        "command": "DynamodbTreeView.CreateTable",
+        "title": "Create Table",
+        "icon": "$(add)"
+      },
+      {
+        "command": "DynamodbTreeView.DeleteTable",
+        "title": "Delete Table",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "DynamodbTreeView.EditCapacity",
+        "title": "Edit Table Capacity",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "DynamodbTreeView.QueryTable",
+        "title": "Query Table",
+        "icon": "$(search)"
+      },
+      {
+        "command": "DynamodbTreeView.ScanTable",
+        "title": "Scan Table",
+        "icon": "$(database)"
+      },
+      {
+        "command": "DynamodbTreeView.AddItem",
+        "title": "Add Item",
+        "icon": "$(add)"
+      },
+      {
+        "command": "DynamodbTreeView.EditItem",
+        "title": "Edit Item",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "DynamodbTreeView.DeleteItem",
+        "title": "Delete Item",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -292,6 +332,36 @@
           "command": "DynamodbTreeView.ViewResponsePayload",
           "when": "view == DynamodbTreeView && viewItem == ResponsePayload",
           "group": "inline"
+        },
+        {
+          "command": "DynamodbTreeView.CreateTable",
+          "when": "view == DynamodbTreeView",
+          "group": "navigation@5"
+        },
+        {
+          "command": "DynamodbTreeView.DeleteTable",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Dynamodb"
+        },
+        {
+          "command": "DynamodbTreeView.EditCapacity",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Dynamodb"
+        },
+        {
+          "command": "DynamodbTreeView.QueryTable",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Operations"
+        },
+        {
+          "command": "DynamodbTreeView.ScanTable",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Operations"
+        },
+        {
+          "command": "DynamodbTreeView.AddItem",
+          "when": "view == DynamodbTreeView && viewItem == Dynamodb",
+          "group": "Items"
         }
       ]
     },

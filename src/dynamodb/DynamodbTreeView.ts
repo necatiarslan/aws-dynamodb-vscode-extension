@@ -583,4 +583,481 @@ export class DynamodbTreeView {
 		ui.logToOutput(jsonString);
 		ui.ShowTextDocument(jsonString, "json");
 	}
+
+	async CreateTable() {
+		ui.logToOutput('DynamodbTreeView.CreateTable Started');
+
+		// Get region
+		let region = await vscode.window.showInputBox({ 
+			placeHolder: 'Enter AWS Region (e.g., us-east-1)', 
+			value: 'us-east-1' 
+		});
+		if (!region) { return; }
+
+		// Get table name
+		let tableName = await vscode.window.showInputBox({ 
+			placeHolder: 'Enter Table Name',
+			validateInput: (value) => {
+				if (!value || value.length === 0) {
+					return 'Table name is required';
+				}
+				if (!/^[a-zA-Z0-9_.-]+$/.test(value)) {
+					return 'Table name can only contain alphanumeric characters, dots, hyphens, and underscores';
+				}
+				return null;
+			}
+		});
+		if (!tableName) { return; }
+
+		// Get partition key name
+		let partitionKeyName = await vscode.window.showInputBox({ 
+			placeHolder: 'Enter Partition Key Name (e.g., id)',
+			prompt: 'The primary key attribute name'
+		});
+		if (!partitionKeyName) { return; }
+
+		// Get partition key type
+		let partitionKeyType = await vscode.window.showQuickPick(['S (String)', 'N (Number)', 'B (Binary)'], {
+			placeHolder: 'Select Partition Key Data Type'
+		});
+		if (!partitionKeyType) { return; }
+		partitionKeyType = partitionKeyType.charAt(0); // Extract S, N, or B
+
+		// Ask if sort key is needed
+		let needsSortKey = await vscode.window.showQuickPick(['No', 'Yes'], {
+			placeHolder: 'Does this table need a Sort Key?'
+		});
+		
+		let sortKeyName, sortKeyType;
+		if (needsSortKey === 'Yes') {
+			sortKeyName = await vscode.window.showInputBox({ 
+				placeHolder: 'Enter Sort Key Name'
+			});
+			if (!sortKeyName) { return; }
+
+			let sortKeyTypeTemp = await vscode.window.showQuickPick(['S (String)', 'N (Number)', 'B (Binary)'], {
+				placeHolder: 'Select Sort Key Data Type'
+			});
+			if (!sortKeyTypeTemp) { return; }
+			sortKeyType = sortKeyTypeTemp.charAt(0);
+		}
+
+		// Confirm creation
+		let confirm = await vscode.window.showQuickPick(['Yes', 'No'], {
+			placeHolder: `Create table "${tableName}" in ${region}?`
+		});
+		if (confirm !== 'Yes') { return; }
+
+		// Create the table
+		let result = await api.CreateDynamodbTable(
+			region, 
+			tableName, 
+			partitionKeyName, 
+			partitionKeyType,
+			sortKeyName,
+			sortKeyType
+		);
+
+		if (result.isSuccessful) {
+			// Add to tree view
+			this.treeDataProvider.AddDynamodb(region, tableName);
+			this.SaveState();
+			this.Refresh();
+		}
+	}
+
+	async DeleteTable(node: DynamodbTreeItem) {
+		ui.logToOutput('DynamodbTreeView.DeleteTable Started');
+		if (node.TreeItemType !== TreeItemType.Dynamodb) { return; }
+
+		// Confirm deletion
+		let confirm = await vscode.window.showWarningMessage(
+			`Are you sure you want to DELETE table "${node.Dynamodb}" in ${node.Region}? This action CANNOT be undone!`,
+			{ modal: true },
+			'Delete Table'
+		);
+
+		if (confirm !== 'Delete Table') { return; }
+
+		// Double confirmation
+		let doubleConfirm = await vscode.window.showInputBox({
+			placeHolder: `Type "${node.Dynamodb}" to confirm deletion`,
+			prompt: 'This will permanently delete the table and all its data',
+			validateInput: (value) => {
+				if (value !== node.Dynamodb) {
+					return `Please type "${node.Dynamodb}" exactly to confirm`;
+				}
+				return null;
+			}
+		});
+
+		if (doubleConfirm !== node.Dynamodb) { return; }
+
+		// Delete the table
+		let result = await api.DeleteDynamodbTable(node.Region, node.Dynamodb);
+		
+		if (result.isSuccessful) {
+			this.treeDataProvider.RemoveDynamodb(node.Region, node.Dynamodb);
+			this.SaveState();
+			this.Refresh();
+		}
+	}
+
+	async EditCapacity(node: DynamodbTreeItem) {
+		ui.logToOutput('DynamodbTreeView.EditCapacity Started');
+		if (node.TreeItemType !== TreeItemType.Dynamodb) { return; }
+
+		// Get current capacity settings
+		let tableDetails = await api.GetDynamodb(node.Region, node.Dynamodb);
+		if (!tableDetails.isSuccessful) { return; }
+
+		let details = api.ExtractTableDetails(tableDetails.result);
+
+		// Ask billing mode
+		let billingMode = await vscode.window.showQuickPick(
+			['PAY_PER_REQUEST (On-Demand)', 'PROVISIONED'],
+			{
+				placeHolder: 'Select Billing Mode',
+				canPickMany: false
+			}
+		);
+		if (!billingMode) { return; }
+
+		let mode = billingMode.startsWith('PAY_PER_REQUEST') ? 'PAY_PER_REQUEST' : 'PROVISIONED';
+		let readCapacity, writeCapacity;
+
+		if (mode === 'PROVISIONED') {
+			let readInput = await vscode.window.showInputBox({
+				placeHolder: 'Enter Read Capacity Units',
+				value: details.readCapacity?.toString() || '5',
+				validateInput: (value) => {
+					if (!value || isNaN(Number(value)) || Number(value) < 1) {
+						return 'Please enter a valid number >= 1';
+					}
+					return null;
+				}
+			});
+			if (!readInput) { return; }
+			readCapacity = Number(readInput);
+
+			let writeInput = await vscode.window.showInputBox({
+				placeHolder: 'Enter Write Capacity Units',
+				value: details.writeCapacity?.toString() || '5',
+				validateInput: (value) => {
+					if (!value || isNaN(Number(value)) || Number(value) < 1) {
+						return 'Please enter a valid number >= 1';
+					}
+					return null;
+				}
+			});
+			if (!writeInput) { return; }
+			writeCapacity = Number(writeInput);
+		}
+
+		let result = await api.UpdateTableCapacity(
+			node.Region,
+			node.Dynamodb,
+			readCapacity,
+			writeCapacity,
+			mode
+		);
+
+		if (result.isSuccessful) {
+			this.Refresh();
+		}
+	}
+
+	async QueryTable(node: DynamodbTreeItem) {
+		ui.logToOutput('DynamodbTreeView.QueryTable Started');
+		if (node.TreeItemType !== TreeItemType.Dynamodb) { return; }
+
+		// Get table details to know the keys
+		let tableDetails = await api.GetDynamodb(node.Region, node.Dynamodb);
+		if (!tableDetails.isSuccessful) { return; }
+
+		let details = api.ExtractTableDetails(tableDetails.result);
+
+		if (!details.partitionKey) {
+			ui.showErrorMessage('Cannot query: Table schema not found', new Error('Table schema not found'));
+			return;
+		}
+
+		// Get partition key value
+		let partitionKeyValue = await vscode.window.showInputBox({
+			placeHolder: `Enter ${details.partitionKey.name} value`,
+			prompt: `Partition Key: ${details.partitionKey.name} (${details.partitionKey.type})`
+		});
+		if (!partitionKeyValue) { return; }
+
+		// Build the key condition expression
+		let keyConditionExpression = `${details.partitionKey.name} = :pkval`;
+		let expressionAttributeValues: any = {
+			':pkval': { [details.partitionKey.type]: partitionKeyValue }
+		};
+
+		// If there's a sort key, ask if they want to filter by it
+		if (details.sortKey) {
+			let useSortKey = await vscode.window.showQuickPick(['No', 'Yes'], {
+				placeHolder: `Filter by ${details.sortKey.name}?`
+			});
+
+			if (useSortKey === 'Yes') {
+				let sortKeyValue = await vscode.window.showInputBox({
+					placeHolder: `Enter ${details.sortKey.name} value`,
+					prompt: `Sort Key: ${details.sortKey.name} (${details.sortKey.type})`
+				});
+				if (sortKeyValue) {
+					keyConditionExpression += ` AND ${details.sortKey.name} = :skval`;
+					expressionAttributeValues[':skval'] = { [details.sortKey.type]: sortKeyValue };
+				}
+			}
+		}
+
+		// Execute query
+		let result = await api.QueryTable(
+			node.Region,
+			node.Dynamodb,
+			keyConditionExpression,
+			expressionAttributeValues,
+			undefined,
+			100 // Limit to 100 items
+		);
+
+		if (result.isSuccessful) {
+			let itemCount = result.result.Items?.length || 0;
+			ui.showInfoMessage(`Query returned ${itemCount} item(s)`);
+			
+			// Show results
+			let jsonString = JSON.stringify(result.result.Items, null, 2);
+			ui.ShowTextDocument(jsonString, "json");
+		}
+	}
+
+	async ScanTable(node: DynamodbTreeItem) {
+		ui.logToOutput('DynamodbTreeView.ScanTable Started');
+		if (node.TreeItemType !== TreeItemType.Dynamodb) { return; }
+
+		// Get limit
+		let limitInput = await vscode.window.showInputBox({
+			placeHolder: 'Enter maximum number of items to scan (default: 100)',
+			value: '100',
+			validateInput: (value) => {
+				if (!value || isNaN(Number(value)) || Number(value) < 1) {
+					return 'Please enter a valid number >= 1';
+				}
+				return null;
+			}
+		});
+		if (!limitInput) { return; }
+		let limit = Number(limitInput);
+
+		// Warn about scan cost
+		let confirm = await vscode.window.showWarningMessage(
+			`Scanning a table reads every item and can be expensive. Continue with scan of up to ${limit} items?`,
+			'Yes', 'No'
+		);
+		if (confirm !== 'Yes') { return; }
+
+		// Execute scan
+		let result = await api.ScanTable(
+			node.Region,
+			node.Dynamodb,
+			limit
+		);
+
+		if (result.isSuccessful) {
+			let itemCount = result.result.Items?.length || 0;
+			ui.showInfoMessage(`Scan returned ${itemCount} item(s)`);
+			
+			// Show results
+			let jsonString = JSON.stringify(result.result.Items, null, 2);
+			ui.ShowTextDocument(jsonString, "json");
+		}
+	}
+
+	async AddItem(node: DynamodbTreeItem) {
+		ui.logToOutput('DynamodbTreeView.AddItem Started');
+		if (node.TreeItemType !== TreeItemType.Dynamodb) { return; }
+
+		// Get table details to know the key schema
+		let tableDetails = await api.GetDynamodb(node.Region, node.Dynamodb);
+		if (!tableDetails.isSuccessful) { return; }
+
+		let details = api.ExtractTableDetails(tableDetails.result);
+
+		if (!details.partitionKey) {
+			ui.showErrorMessage('Cannot add item: Table schema not found', new Error('Table schema not found'));
+			return;
+		}
+
+		// Get partition key value
+		let partitionKeyValue = await vscode.window.showInputBox({
+			placeHolder: `Enter ${details.partitionKey.name} value`,
+			prompt: `Partition Key: ${details.partitionKey.name} (${details.partitionKey.type})`
+		});
+		if (!partitionKeyValue) { return; }
+
+		let item: any = {
+			[details.partitionKey.name]: { [details.partitionKey.type]: partitionKeyValue }
+		};
+
+		// If there's a sort key, get its value
+		if (details.sortKey) {
+			let sortKeyValue = await vscode.window.showInputBox({
+				placeHolder: `Enter ${details.sortKey.name} value`,
+				prompt: `Sort Key: ${details.sortKey.name} (${details.sortKey.type})`
+			});
+			if (!sortKeyValue) { return; }
+			item[details.sortKey.name] = { [details.sortKey.type]: sortKeyValue };
+		}
+
+		// Get additional attributes as JSON
+		let additionalAttrs = await vscode.window.showInputBox({
+			placeHolder: 'Enter additional attributes as JSON (optional)',
+			prompt: 'Example: {"name": {"S": "John"}, "age": {"N": "30"}}'
+		});
+
+		if (additionalAttrs) {
+			try {
+				let attrs = JSON.parse(additionalAttrs);
+				item = { ...item, ...attrs };
+			} catch (error) {
+				ui.showErrorMessage('Invalid JSON format for attributes', error as Error);
+				return;
+			}
+		}
+
+		// Add the item
+		let result = await api.PutItem(node.Region, node.Dynamodb, item);
+		
+		if (result.isSuccessful) {
+			this.Refresh();
+		}
+	}
+
+	async EditItem(node: DynamodbTreeItem) {
+		ui.logToOutput('DynamodbTreeView.EditItem Started');
+		if (node.TreeItemType !== TreeItemType.Dynamodb) { return; }
+
+		ui.showInfoMessage('Edit Item: Please provide the item key and attributes to update');
+
+		// Get table details
+		let tableDetails = await api.GetDynamodb(node.Region, node.Dynamodb);
+		if (!tableDetails.isSuccessful) { return; }
+
+		let details = api.ExtractTableDetails(tableDetails.result);
+
+		if (!details.partitionKey) {
+			ui.showErrorMessage('Cannot edit item: Table schema not found', new Error('Table schema not found'));
+			return;
+		}
+
+		// Get the key to identify the item
+		let partitionKeyValue = await vscode.window.showInputBox({
+			placeHolder: `Enter ${details.partitionKey.name} value to identify the item`,
+			prompt: `Partition Key: ${details.partitionKey.name} (${details.partitionKey.type})`
+		});
+		if (!partitionKeyValue) { return; }
+
+		let key: any = {
+			[details.partitionKey.name]: { [details.partitionKey.type]: partitionKeyValue }
+		};
+
+		if (details.sortKey) {
+			let sortKeyValue = await vscode.window.showInputBox({
+				placeHolder: `Enter ${details.sortKey.name} value`,
+				prompt: `Sort Key: ${details.sortKey.name} (${details.sortKey.type})`
+			});
+			if (!sortKeyValue) { return; }
+			key[details.sortKey.name] = { [details.sortKey.type]: sortKeyValue };
+		}
+
+		// Get update expression
+		let updateExpression = await vscode.window.showInputBox({
+			placeHolder: 'Enter update expression',
+			prompt: 'Example: SET #name = :nameVal, #age = :ageVal',
+			value: 'SET '
+		});
+		if (!updateExpression) { return; }
+
+		// Get expression attribute values
+		let expressionValues = await vscode.window.showInputBox({
+			placeHolder: 'Enter expression attribute values as JSON',
+			prompt: 'Example: {":nameVal": {"S": "John"}, ":ageVal": {"N": "31"}}'
+		});
+		if (!expressionValues) { return; }
+
+		let expressionAttributeValues;
+		try {
+			expressionAttributeValues = JSON.parse(expressionValues);
+		} catch (error) {
+			ui.showErrorMessage('Invalid JSON format for expression values', error as Error);
+			return;
+		}
+
+		// Update the item
+		let result = await api.UpdateItem(
+			node.Region,
+			node.Dynamodb,
+			key,
+			updateExpression,
+			expressionAttributeValues
+		);
+
+		if (result.isSuccessful) {
+			let jsonString = JSON.stringify(result.result.Attributes, null, 2);
+			ui.ShowTextDocument(jsonString, "json");
+		}
+	}
+
+	async DeleteItem(node: DynamodbTreeItem) {
+		ui.logToOutput('DynamodbTreeView.DeleteItem Started');
+		if (node.TreeItemType !== TreeItemType.Dynamodb) { return; }
+
+		// Get table details
+		let tableDetails = await api.GetDynamodb(node.Region, node.Dynamodb);
+		if (!tableDetails.isSuccessful) { return; }
+
+		let details = api.ExtractTableDetails(tableDetails.result);
+
+		if (!details.partitionKey) {
+			ui.showErrorMessage('Cannot delete item: Table schema not found', new Error('Table schema not found'));
+			return;
+		}
+
+		// Get the key to identify the item
+		let partitionKeyValue = await vscode.window.showInputBox({
+			placeHolder: `Enter ${details.partitionKey.name} value to identify the item to delete`,
+			prompt: `Partition Key: ${details.partitionKey.name} (${details.partitionKey.type})`
+		});
+		if (!partitionKeyValue) { return; }
+
+		let key: any = {
+			[details.partitionKey.name]: { [details.partitionKey.type]: partitionKeyValue }
+		};
+
+		if (details.sortKey) {
+			let sortKeyValue = await vscode.window.showInputBox({
+				placeHolder: `Enter ${details.sortKey.name} value`,
+				prompt: `Sort Key: ${details.sortKey.name} (${details.sortKey.type})`
+			});
+			if (!sortKeyValue) { return; }
+			key[details.sortKey.name] = { [details.sortKey.type]: sortKeyValue };
+		}
+
+		// Confirm deletion
+		let confirm = await vscode.window.showWarningMessage(
+			'Are you sure you want to delete this item?',
+			{ modal: true },
+			'Delete Item'
+		);
+		if (confirm !== 'Delete Item') { return; }
+
+		// Delete the item
+		let result = await api.DeleteItem(node.Region, node.Dynamodb, key);
+		
+		if (result.isSuccessful) {
+			this.Refresh();
+		}
+	}
 }
