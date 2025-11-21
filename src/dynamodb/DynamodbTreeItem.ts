@@ -18,6 +18,8 @@ export class DynamodbTreeItem extends vscode.TreeItem {
 	public EnvironmentVariableName: string | undefined;
 	public EnvironmentVariableValue: string | undefined;
 	public IsRunning: boolean = false;
+	public ReadCapacity: number | undefined;
+	public WriteCapacity: number | undefined;
 
 	constructor(text:string, treeItemType:TreeItemType) {
 		super(text)
@@ -175,6 +177,16 @@ export class DynamodbTreeItem extends vscode.TreeItem {
 		{
 			this.iconPath = new vscode.ThemeIcon('pulse');
 			this.contextValue = "TableStatus"
+		}
+		else if(this.TreeItemType === TreeItemType.ReadCapacity)
+		{
+			this.iconPath = new vscode.ThemeIcon('arrow-down');
+			this.contextValue = "ReadCapacity"
+		}
+		else if(this.TreeItemType === TreeItemType.WriteCapacity)
+		{
+			this.iconPath = new vscode.ThemeIcon('arrow-up');
+			this.contextValue = "WriteCapacity"
 		}
 		else
 		{

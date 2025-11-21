@@ -182,14 +182,40 @@ export class DynamodbTreeDataProvider implements vscode.TreeDataProvider<Dynamod
 			}
 
 			// Update Capacity node
-			const capacityNode = node.Children.find(c => c.TreeItemType === TreeItemType.Capacity);
-			if (capacityNode) {
-				if (details.billingMode === 'PAY_PER_REQUEST') {
-					capacityNode.label = `Capacity: On-Demand (${details.billingMode})`;
-				} else {
-					capacityNode.label = `Capacity: Read ${details.readCapacity || 0}, Write ${details.writeCapacity || 0}`;
-				}
+		const capacityNode = node.Children.find(c => c.TreeItemType === TreeItemType.Capacity);
+		if (capacityNode) {
+			capacityNode.Children = [];
+			
+			if (details.billingMode === 'PAY_PER_REQUEST') {
+				capacityNode.label = `Capacity: On-Demand (${details.billingMode})`;
+				capacityNode.collapsibleState = vscode.TreeItemCollapsibleState.None;
+			} else {
+				capacityNode.label = `Capacity: Provisioned`;
+				capacityNode.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+				
+				// Add Read Capacity sub-node
+				const readCapacityItem = new DynamodbTreeItem(
+					`Read Capacity: ${details.readCapacity || 0}`,
+					TreeItemType.ReadCapacity
+				);
+				readCapacityItem.Parent = capacityNode;
+				readCapacityItem.Region = node.Region;
+				readCapacityItem.Dynamodb = node.Dynamodb;
+				readCapacityItem.ReadCapacity = details.readCapacity;
+				capacityNode.Children.push(readCapacityItem);
+				
+				// Add Write Capacity sub-node
+				const writeCapacityItem = new DynamodbTreeItem(
+					`Write Capacity: ${details.writeCapacity || 0}`,
+					TreeItemType.WriteCapacity
+				);
+				writeCapacityItem.Parent = capacityNode;
+				writeCapacityItem.Region = node.Region;
+				writeCapacityItem.Dynamodb = node.Dynamodb;
+				writeCapacityItem.WriteCapacity = details.writeCapacity;
+				capacityNode.Children.push(writeCapacityItem);
 			}
+		}
 
 			// Update Table Info node with children
 		const tableInfoNode = node.Children.find(c => c.TreeItemType === TreeItemType.TableInfo);
