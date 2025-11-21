@@ -11,16 +11,153 @@
   - **Capacity Mode**: View billing mode (On-Demand or Provisioned) and throughput
   - **Table Statistics**: Size, item count, table class, and status
   - **Indexes**: Browse all Global and Local Secondary Indexes with their key schemas
-- **Create Table**: Create new DynamoDB tables through UI
-- **Delete Table**: Delete tables
-- **Edit Capacity**: Edit table capacity settings
-- **View and Edit Items**:View and edit table items
-- **Query and Scan Table**: Query and scan operations
-- **Add/Remove Tables**: Add tables from any region to your workspace
-- **AWS Profile Support**: Work with multiple AWS profiles seamlessly
-- **Filter Tables**: Quickly find tables by name
-- **Favorites**: Mark frequently used tables as favorites
-- **Export Table Details**: View and export complete table configurations as JSON
+- **Table Management**:
+  - **Create Table**: Create new DynamoDB tables through UI
+  - **Delete Table**: Delete tables with confirmation
+  - **Edit Capacity**: Modify table capacity settings
+- **Item Operations**:
+  - **Query Table**: Execute queries with partition and sort key filters
+  - **Scan Table**: Perform full table scans with configurable limits
+  - **Add Items**: Create new items with support for all DynamoDB data types
+  - **Edit Items**: Update existing items, change data types, add/remove attributes
+  - **Delete Items**: Remove items from your tables
+- **Workspace Features**:
+  - **Add/Remove Tables**: Add tables from any region to your workspace
+  - **AWS Profile Support**: Work with multiple AWS profiles seamlessly
+  - **Filter Tables**: Quickly find tables by name
+  - **Favorites**: Mark frequently used tables as favorites
+  - **Export Table Details**: View and export complete table configurations as JSON
+
+## Add New Item
+<img src="media/screenshot-add-new-item.png" alt="screenshoot" width="800">
+
+## Edit Item
+<img src="media/screenshot-edit-item.png" alt="screenshoot" width="800">
+
+## Query Table
+<img src="media/screenshot-query-table.png" alt="screenshoot" width="800">
+
+## Scan Table
+<img src="media/screenshot-scan-table.png" alt="screenshoot" width="800">
+
+## 🔍 Item Management
+
+### Query Table
+Query your DynamoDB tables efficiently using partition and sort keys:
+
+**Features:**
+- **Partition Key Query**: Required field to query items by partition key
+- **Sort Key Filter**: Optional filter for tables with composite keys
+- **Limit Control**: Set maximum number of items to return (1-1000)
+- **Results Grid**: View query results in an interactive table with:
+  - Key attributes highlighted with 🔑 icon
+  - NULL values displayed as "NULL" text
+  - Edit and delete actions for each item
+- **Quick Actions**:
+  - **New Item**: Add a new item and automatically query it
+  - **Copy JSON**: Export results to clipboard
+  - **Edit Item**: Click ✏️ to modify any item
+  - **Delete Item**: Remove items with confirmation
+
+**Workflow:**
+1. Right-click on a table → Select "Query Table"
+2. Enter partition key value (required)
+3. Enter sort key value (optional, if table has sort key)
+4. Set result limit (default: 100)
+5. Click "🔍 Query" to execute
+6. View results in the grid below
+
+### Scan Table
+Perform full table scans to retrieve items:
+
+**Features:**
+- **Flexible Scanning**: Scan entire table or limit results
+- **Limit Control**: Configure maximum items to scan (1-1000)
+- **Warning System**: Visual warning about scan costs for large tables
+- **Results Display**: Same interactive grid as Query with:
+  - All attributes from scanned items
+  - Scanned count vs. returned count
+  - Edit and delete capabilities
+- **Export Options**: Copy all results as JSON
+
+**Important Notes:**
+- ⚠️ Scans read every item in the table and can be expensive
+- Consider using Query if you know the partition key
+- Use limit parameter to control costs
+
+**Workflow:**
+1. Right-click on a table → Select "Scan Table"
+2. Set scan limit (default: 100)
+3. Click "🔍 Scan Table"
+4. Review scanned count and results
+
+### Add Item
+Create new items with a user-friendly interface:
+
+**Features:**
+- **Primary Keys**: Required fields for partition and sort keys
+- **Auto-populate**: Automatically suggests attributes from existing items
+- **Data Type Support**:
+  - **String (S)**: Text values
+  - **Number (N)**: Numeric values with validation
+  - **Boolean (BOOL)**: Yes/No radio buttons
+  - **Null (NULL)**: Null values (no value input needed)
+  - **Map (M)**: JSON objects
+  - **List (L)**: JSON arrays
+  - **String Set (SS)**: Sets of strings
+  - **Number Set (NS)**: Sets of numbers
+  - **Binary Set (BS)**: Sets of binary data
+  - **Binary (B)**: Binary data
+- **Dynamic Attributes**:
+  - Add unlimited additional attributes
+  - Change data types on the fly
+  - Remove attributes with 🗑️ button
+- **Validation**:
+  - Required field checking
+  - Numeric type validation
+  - Boolean selection enforcement
+
+**Workflow:**
+1. Right-click on a table → Select "Add Item"
+2. Fill in partition key value (required)
+3. Fill in sort key value if applicable (required)
+4. Click "➕ Add Attribute" to add more fields
+5. Select data type from dropdown
+6. Enter value (or select for boolean/null types)
+7. Click "Add Item" to save
+
+### Edit Item
+Modify existing items with full control:
+
+**Features:**
+- **Read-only Keys**: Partition and sort keys are displayed but cannot be modified
+- **Attribute Management**:
+  - Update attribute values
+  - Change attribute data types
+  - Add new attributes
+  - Remove existing attributes (except keys)
+- **Same UI as Add Item**: Consistent experience with:
+  - Type-specific inputs (radio buttons for booleans, etc.)
+  - Data type dropdown for each attribute
+  - Delete button (🗑️) for removable attributes
+- **Delete Item**: Remove the entire item with confirmation
+- **Auto-refresh**: Parent panel (Query/Scan) refreshes after save
+
+**Workflow:**
+1. From Query or Scan results, click ✏️ on any item
+2. Modify attribute values as needed
+3. Change data types using the dropdown
+4. Add new attributes with "➕ Add Attribute"
+5. Remove attributes with 🗑️ button
+6. Click "💾 Update Item" to save changes
+7. Or click "🗑️ Delete Item" to remove the item
+
+**Smart Features:**
+- Automatically detects removed attributes and sends REMOVE clause
+- Validates data types before saving
+- Shows clear error messages for validation failures
+- Returns to parent panel after successful update
+
 
 ## 📋 Table Information Displayed
 
@@ -121,9 +258,13 @@ To report bugs or request new features:
 ## 📝 Roadmap
 
 ### Coming Soon
-- Add/remove indexes
-- Table backup and restore
-- DynamoDB Streams integration
+- Add Map, List, Set data types
+- Add Binary data type
+- Add Binary Set data type
+- Add Global Secondary Indexes
+- Add Local Secondary Indexes
+- Add Table backup and restore
+- Add DynamoDB Streams integration
 
 ## 🔗 Related Extensions
 - [AWS Access VSCode Extension](https://bit.ly/aws-access-vscode-extension)

@@ -13,12 +13,14 @@ export class AddItemPanel {
 	private readonly _region: string;
 	private readonly _tableName: string;
 	private readonly _tableDetails: api.TableDetails;
+	private readonly _onItemAdded?: (item: any) => void;
 
 	public static async createOrShow(
 		extensionUri: vscode.Uri,
 		region: string,
 		tableName: string,
-		tableDetails: api.TableDetails
+		tableDetails: api.TableDetails,
+		onItemAdded?: (item: any) => void
 	) {
 		const column = vscode.window.activeTextEditor
 			? vscode.window.activeTextEditor.viewColumn
@@ -41,7 +43,7 @@ export class AddItemPanel {
 			}
 		);
 
-		AddItemPanel.currentPanel = new AddItemPanel(panel, extensionUri, region, tableName, tableDetails);
+		AddItemPanel.currentPanel = new AddItemPanel(panel, extensionUri, region, tableName, tableDetails, onItemAdded);
 	}
 
 	private constructor(
@@ -49,13 +51,15 @@ export class AddItemPanel {
 		extensionUri: vscode.Uri,
 		region: string,
 		tableName: string,
-		tableDetails: api.TableDetails
+		tableDetails: api.TableDetails,
+		onItemAdded?: (item: any) => void
 	) {
 		this._panel = panel;
 		this._extensionUri = extensionUri;
 		this._region = region;
 		this._tableName = tableName;
 		this._tableDetails = tableDetails;
+		this._onItemAdded = onItemAdded;
 
 		// Set the webview's initial html content
 		this._update();
@@ -145,6 +149,10 @@ export class AddItemPanel {
 			
 			if (result.isSuccessful) {
 				ui.showInfoMessage('Item added successfully!');
+				// Call the callback if provided
+				if (this._onItemAdded) {
+					this._onItemAdded(dynamodbItem);
+				}
 				// Close the panel on success
 				this._panel.dispose();
 			} else {

@@ -74,6 +74,9 @@ export class QueryTablePanel {
 					case 'deleteItem':
 						await this._handleDeleteItem(message.item);
 						return;
+					case 'addItem':
+						await this._handleAddItem();
+						return;
 					case 'rescan':
 						await this._handleQuery(message.params);
 						return;
@@ -148,6 +151,49 @@ export class QueryTablePanel {
 			this._panel.webview.postMessage({
 				command: 'error',
 				message: error.message || 'An unexpected error occurred'
+			});
+		}
+	}
+
+	private async _handleAddItem() {
+		try {
+			ui.logToOutput('QueryTablePanel: Opening add item panel');
+			
+			// Open the AddItemPanel with a callback
+			const { AddItemPanel } = await import('./AddItemPanel');
+			await AddItemPanel.createOrShow(
+				this._extensionUri,
+				this._region,
+				this._tableName,
+				this._tableDetails,
+				async (addedItem: any) => {
+					// After item is added, query for it using the PK and SK values
+					if (addedItem) {
+						const pkValue = addedItem[this._tableDetails.partitionKey!.name];
+						const pkType = Object.keys(pkValue)[0];
+						const pkVal = pkValue[pkType];
+						
+						let skVal = '';
+						if (this._tableDetails.sortKey) {
+							const skValue = addedItem[this._tableDetails.sortKey.name];
+							const skType = Object.keys(skValue)[0];
+							skVal = skValue[skType];
+						}
+						
+						// Send query command to webview to populate the form and execute query
+						this._panel.webview.postMessage({
+							command: 'executeQuery',
+							partitionKeyValue: pkVal,
+							sortKeyValue: skVal
+						});
+					}
+				}
+			);
+		} catch (error: any) {
+			ui.logToOutput('QueryTablePanel: Error opening add item panel', error);
+			this._panel.webview.postMessage({
+				command: 'error',
+				message: error.message || 'Failed to open add item panel'
 			});
 		}
 	}
@@ -490,6 +536,7 @@ export class QueryTablePanel {
 
 				<div class="button-group">
 					<button type="button" id="cancelBtn" class="btn-secondary">Close</button>
+					<button type="button" id="addItemBtn" class="btn-secondary">➕ New Item</button>
 					<button type="submit" id="queryBtn" class="btn-primary">🔍 Query</button>
 				</div>
 			</div>
@@ -546,9 +593,14 @@ export class QueryTablePanel {
 		});
 
 		// Cancel button
-		document.getElementById('cancelBtn').addEventListener('click', () => {
-			vscode.postMessage({ command: 'cancel' });
-		});
+	document.getElementById('cancelBtn').addEventListener('click', () => {
+		vscode.postMessage({ command: 'cancel' });
+	});
+
+	// Add Item button
+	document.getElementById('addItemBtn').addEventListener('click', () => {
+		vscode.postMessage({ command: 'addItem' });
+	});
 
 		// Export button
 		document.getElementById('exportBtn').addEventListener('click', () => {
@@ -568,17 +620,29 @@ export class QueryTablePanel {
 		});
 
 		// Handle messages from extension
-		window.addEventListener('message', event => {
-			const message = event.data;
-			switch (message.command) {
-				case 'queryResults':
-					displayResults(message.items, message.count);
-					break;
-				case 'error':
-					showError(message.message);
-					break;
-			}
-		});
+	window.addEventListener('message', event => {
+		const message = event.data;
+		switch (message.command) {
+			case 'queryResults':
+				displayResults(message.items, message.count);
+				break;
+			case 'error':
+				showError(message.message);
+				break;
+			case 'executeQuery':
+				// Populate form fields and execute query
+				document.getElementById('partitionKeyValue').value = message.partitionKeyValue || '';
+				if (message.sortKeyValue !== undefined) {
+					const sortKeyInput = document.getElementById('sortKeyValue');
+					if (sortKeyInput) {
+						sortKeyInput.value = message.sortKeyValue || '';
+					}
+				}
+				// Trigger form submission
+				document.getElementById('queryForm').dispatchEvent(new Event('submit'));
+				break;
+		}
+	});
 
 		// Event delegation for edit/delete buttons
 		document.getElementById('tableBody').addEventListener('click', (e) => {
