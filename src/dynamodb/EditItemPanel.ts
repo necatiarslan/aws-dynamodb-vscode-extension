@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import * as api from '../common/API';
 import * as ui from '../common/UI';
 
@@ -72,6 +74,19 @@ export class EditItemPanel {
 		this._panel.webview.onDidReceiveMessage(
 			async (message) => {
 				switch (message.command) {
+					case 'ready':
+						// Initialize webview with table details and item
+						this._panel.webview.postMessage({
+							command: 'init',
+							tableDetails: {
+								tableName: this._tableName,
+								region: this._region,
+								partitionKey: this._tableDetails.partitionKey,
+								sortKey: this._tableDetails.sortKey
+							},
+							item: this._item
+						});
+						break;
 					case 'updateItem':
 						await this._handleUpdateItem(message.item);
 						return;
@@ -116,10 +131,12 @@ export class EditItemPanel {
 			}
 
 			// Build update expression for non-key attributes
-		const updateExpressionParts: string[] = [];
+		const setExpressionParts: string[] = [];
+		const removeExpressionParts: string[] = [];
 		const expressionAttributeValues: any = {};
 		let valueCounter = 0;
 
+		// Find attributes to SET (update or add)
 		for (const [attrName, attrValue] of Object.entries(dynamodbItem)) {
 			// Skip key attributes
 			if (attrName === this._tableDetails.partitionKey!.name) continue;
@@ -128,11 +145,23 @@ export class EditItemPanel {
 			const valuePlaceholder = `:val${valueCounter}`;
 			
 			expressionAttributeValues[valuePlaceholder] = attrValue;
-			updateExpressionParts.push(`${attrName} = ${valuePlaceholder}`);
+			setExpressionParts.push(`${attrName} = ${valuePlaceholder}`);
 			valueCounter++;
 		}
 
-		if (updateExpressionParts.length === 0) {
+		// Find attributes to REMOVE (existed in original but not in updated)
+		for (const [attrName] of Object.entries(this._item)) {
+			// Skip key attributes
+			if (attrName === this._tableDetails.partitionKey!.name) continue;
+			if (this._tableDetails.sortKey && attrName === this._tableDetails.sortKey.name) continue;
+
+			// If attribute was in original item but not in updated item, remove it
+			if (!dynamodbItem.hasOwnProperty(attrName)) {
+				removeExpressionParts.push(attrName);
+			}
+		}
+
+		if (setExpressionParts.length === 0 && removeExpressionParts.length === 0) {
 			this._panel.webview.postMessage({
 				command: 'error',
 				message: 'No attributes to update (only key attributes present)'
@@ -140,7 +169,15 @@ export class EditItemPanel {
 			return;
 		}
 
-		const updateExpression = 'SET ' + updateExpressionParts.join(', ');
+		// Build the update expression
+		let updateExpression = '';
+		if (setExpressionParts.length > 0) {
+			updateExpression += 'SET ' + setExpressionParts.join(', ');
+		}
+		if (removeExpressionParts.length > 0) {
+			if (updateExpression) updateExpression += ' ';
+			updateExpression += 'REMOVE ' + removeExpressionParts.join(', ');
+		}
 
 		// Update the item
 		const result = await api.UpdateItem(
@@ -235,300 +272,18 @@ export class EditItemPanel {
 		this._panel.webview.html = this._getHtmlForWebview(webview);
 	}
 
-	private _extractAttributeInfo(item: any): Array<{name: string, type: string, value: any, isKey: boolean}> {
-		const attributes: Array<{name: string, type: string, value: any, isKey: boolean}> = [];
-		
-		for (const [attrName, attrValue] of Object.entries(item)) {
-			const dynamoValue = attrValue as any;
-			const type = Object.keys(dynamoValue)[0];
-			const value = dynamoValue[type];
-			
-			const isPartitionKey = attrName === this._tableDetails.partitionKey?.name;
-		const isSortKey = !!(this._tableDetails.sortKey && attrName === this._tableDetails.sortKey.name);
-		const isKey = isPartitionKey || isSortKey;
-		
-		attributes.push({ name: attrName, type, value, isKey });
-		}
-		
-		// Sort attributes: Partition Key, Sort Key, then others
-		const partitionKey = this._tableDetails.partitionKey?.name;
-		const sortKey = this._tableDetails.sortKey?.name;
-
-		attributes.sort((a, b) => {
-			if (a.name === partitionKey) return -1;
-			if (b.name === partitionKey) return 1;
-			if (a.name === sortKey) return -1;
-			if (b.name === sortKey) return 1;
-			return a.name.localeCompare(b.name);
-		});
-
-		return attributes;
-	}
-
 	private _getHtmlForWebview(webview: vscode.Webview) {
 		const nonce = getNonce();
-		const attributes = this._extractAttributeInfo(this._item);
-
-		return `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
-	<title>Edit Item: ${this._tableName}</title>
-	<style>
-		body {
-			padding: 20px;
-			font-family: var(--vscode-font-family);
-			color: var(--vscode-foreground);
-			background-color: var(--vscode-editor-background);
-		}
-		.container {
-			max-width: 800px;
-			margin: 0 auto;
-		}
-		.header {
-			margin-bottom: 24px;
-		}
-		h1 {
-			font-size: 24px;
-			font-weight: 600;
-			margin: 0 0 8px 0;
-		}
-		.subtitle {
-			color: var(--vscode-descriptionForeground);
-			font-size: 13px;
-		}
-		.section {
-			margin-bottom: 24px;
-			padding: 16px;
-			background-color: var(--vscode-input-background);
-			border: 1px solid var(--vscode-input-border);
-			border-radius: 4px;
-		}
-		.section-title {
-			font-size: 14px;
-			font-weight: 600;
-			margin-bottom: 12px;
-			color: var(--vscode-foreground);
-		}
-		.field-group {
-			margin-bottom: 16px;
-		}
-		.field-label {
-			display: block;
-			margin-bottom: 6px;
-			font-size: 13px;
-			font-weight: 500;
-		}
-		.key-badge {
-			display: inline-block;
-			padding: 2px 8px;
-			margin-left: 8px;
-			font-size: 11px;
-			background-color: var(--vscode-badge-background);
-			color: var(--vscode-badge-foreground);
-			border-radius: 3px;
-		}
-		.readonly-badge {
-			background-color: var(--vscode-inputValidation-warningBackground);
-			color: var(--vscode-foreground);
-		}
-		input[type="text"], select {
-			width: 100%;
-			padding: 6px 8px;
-			background-color: var(--vscode-input-background);
-			color: var(--vscode-input-foreground);
-			border: 1px solid var(--vscode-input-border);
-			border-radius: 2px;
-			font-size: 13px;
-			font-family: var(--vscode-font-family);
-			box-sizing: border-box;
-		}
-		input[type="text"]:disabled {
-			opacity: 0.6;
-			cursor: not-allowed;
-		}
-		input:focus, select:focus {
-			outline: 1px solid var(--vscode-focusBorder);
-			border-color: var(--vscode-focusBorder);
-		}
-		.button-group {
-			display: flex;
-			gap: 8px;
-			margin-top: 24px;
-			justify-content: flex-end;
-		}
-		button {
-			padding: 6px 14px;
-			font-size: 13px;
-			font-family: var(--vscode-font-family);
-			border: none;
-			border-radius: 2px;
-			cursor: pointer;
-		}
-		.btn-primary {
-			background-color: var(--vscode-button-background);
-			color: var(--vscode-button-foreground);
-		}
-		.btn-primary:hover {
-			background-color: var(--vscode-button-hoverBackground);
-		}
-		.btn-secondary {
-			background-color: var(--vscode-button-secondaryBackground);
-			color: var(--vscode-button-secondaryForeground);
-		}
-		.btn-secondary:hover {
-			background-color: var(--vscode-button-secondaryHoverBackground);
-		}
-		.btn-danger {
-			background-color: var(--vscode-button-secondaryBackground);
-			color: var(--vscode-errorForeground);
-			border: 1px solid var(--vscode-errorForeground);
-		}
-		.btn-danger:hover {
-			background-color: var(--vscode-inputValidation-errorBackground);
-			color: var(--vscode-foreground);
-		}
-		.error-message {
-			display: none;
-			padding: 12px;
-			margin-bottom: 16px;
-			background-color: var(--vscode-inputValidation-errorBackground);
-			border: 1px solid var(--vscode-inputValidation-errorBorder);
-			color: var(--vscode-errorForeground);
-			border-radius: 4px;
-		}
-		.error-message.show {
-			display: block;
-		}
-	</style>
-</head>
-<body>
-	<div class="container">
-		<div class="header">
-			<h1>Edit Item</h1>
-			<div class="subtitle">Table: ${this._tableName} | Region: ${this._region}</div>
-		</div>
-
-		<div class="error-message" id="errorMessage"></div>
-
-		<form id="editItemForm">
-			<div class="section">
-				<div class="section-title">Attributes</div>
-				
-				${attributes.map((attr, index) => `
-				<div class="field-group">
-					<label class="field-label">
-						${attr.name}
-						<span class="key-badge">${attr.type}</span>
-						${attr.isKey ? '<span class="key-badge readonly-badge">🔑 Read-only (Key)</span>' : ''}
-					</label>
-					<input 
-						type="text"
-						id="attr_${index}"
-						data-name="${attr.name}"
-						data-type="${attr.type}"
-						value="${this._escapeHtml(String(attr.value))}"
-						${attr.isKey ? 'disabled' : ''}
-						placeholder="Enter value">
-				</div>
-				`).join('')}
-			</div>
-
-			<div class="button-group">
-				<button type="button" id="deleteBtn" class="btn-danger" style="margin-right: auto;">🗑️ Delete Item</button>
-				<button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
-				<button type="submit" id="submitBtn" class="btn-primary">💾 Update Item</button>
-			</div>
-		</form>
-	</div>
-
-	<script nonce="${nonce}">
-		const vscode = acquireVsCodeApi();
-		const tableDetails = ${JSON.stringify(this._tableDetails)};
-
-		// Form submission
-		document.getElementById('editItemForm').addEventListener('submit', async (e) => {
-			e.preventDefault();
-			
-			const errorMessage = document.getElementById('errorMessage');
-			errorMessage.classList.remove('show');
-			
-			const item = {};
-			
-			try {
-				// Collect all inputs
-				const inputs = document.querySelectorAll('input[type="text"]');
-				inputs.forEach(input => {
-					const name = input.getAttribute('data-name');
-					const type = input.getAttribute('data-type');
-					const value = input.value;
-					
-					if (name && type) {
-						item[name] = {
-							type: type,
-							value: value
-						};
-					}
-				});
-				
-				// Send to extension
-				vscode.postMessage({
-					command: 'updateItem',
-					item: item
-				});
-				
-			} catch (error) {
-				showError(error.message || 'An error occurred');
-			}
-		});
-
-		// Delete button
-	document.getElementById('deleteBtn').addEventListener('click', () => {
-		// Ask extension to show confirmation dialog
-		vscode.postMessage({ command: 'confirmDelete' });
-	});
-
-	// Cancel button
-	document.getElementById('cancelBtn').addEventListener('click', () => {
-		vscode.postMessage({ command: 'cancel' });
-	});
-
-	// Handle messages from extension
-	window.addEventListener('message', event => {
-		const message = event.data;
-		switch (message.command) {
-			case 'error':
-				showError(message.message);
-				break;
-			case 'deleteConfirmed':
-				// User confirmed deletion, proceed with delete
-				vscode.postMessage({ command: 'deleteItem' });
-				break;
-		}
-	});
-
-	function showError(message) {
-		const errorMessage = document.getElementById('errorMessage');
-		errorMessage.textContent = message;
-		errorMessage.classList.add('show');
-		errorMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-	}
-	</script>
-</body>
-</html>`;
-	}
-
-	private _escapeHtml(text: string): string {
-		const map: { [key: string]: string } = {
-			'&': '&amp;',
-			'<': '&lt;',
-			'>': '&gt;',
-			'"': '&quot;',
-			"'": '&#039;'
-		};
-		return text.replace(/[&<>"']/g, m => map[m]);
+		
+		// Load HTML from file
+		const htmlPath = path.join(__dirname, 'webview', 'editItem.html');
+		let html = fs.readFileSync(htmlPath, 'utf8');
+		
+		// Replace placeholders
+		html = html.replace(/\${cspSource}/g, webview.cspSource);
+		html = html.replace(/\${nonce}/g, nonce);
+		
+		return html;
 	}
 }
 
