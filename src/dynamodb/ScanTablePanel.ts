@@ -420,19 +420,22 @@ export class ScanTablePanel {
 				<div class="section-title">Scan Parameters</div>
 				
 				<!-- Limit -->
-				<div class="field-group">
-					<label class="field-label">
-						Limit
-					</label>
-					<input 
-						type="number"
-						id="limit" 
-						value="100"
-						min="1"
-						max="1000"
-						placeholder="Maximum number of items to return">
-					<div style="font-size: 12px; color: var(--vscode-descriptionForeground); margin-top: 4px;">
-						Maximum number of items to scan (1-1000)
+				<div class="field-group" style="margin-bottom: 0;">
+					<div style="display: flex; align-items: center; gap: 12px;">
+						<label class="field-label" style="margin-bottom: 0; min-width: 60px;">
+							Limit:
+						</label>
+						<input 
+							type="number"
+							id="limit" 
+							value="100"
+							min="1"
+							max="1000"
+							style="flex: 0 0 120px;"
+							placeholder="1-1000">
+						<div style="font-size: 12px; color: var(--vscode-descriptionForeground); flex: 1;">
+							Maximum number of items to scan
+						</div>
 					</div>
 				</div>
 
@@ -583,6 +586,7 @@ export class ScanTablePanel {
 
 			// Create header
 			tableHeader.innerHTML = '<tr>' + 
+				'<th style="width: 50px;"></th>' +
 				attributes.map(attr => {
 					let content = attr;
 					if (attr === partitionKey || attr === sortKey) {
@@ -590,38 +594,34 @@ export class ScanTablePanel {
 					}
 					return '<th>' + content + '</th>';
 				}).join('') +
-				'<th style="width: 120px;">Actions</th>' +
 				'</tr>';
 
 			// Create rows
-			tableBody.innerHTML = items.map((item, itemIndex) => {
-				return '<tr>' + 
-					attributes.map(attr => {
-						const value = item[attr];
-						if (!value) return '<td></td>';
-						
-						// Extract DynamoDB value
-						const type = Object.keys(value)[0];
-						const val = value[type];
-						
-						// Format value
-						let displayValue = '';
-						if (type === 'S' || type === 'N' || type === 'BOOL') {
-							displayValue = String(val);
-						} else {
-							displayValue = '<span class="json-value">' + JSON.stringify(val) + '</span>';
-						}
-						
-						return '<td>' + displayValue + '</td>';
-					}).join('') +
-					'<td>' +
-						'<div class="action-buttons">' +
-							'<button class="btn-icon" data-action="edit" data-index="' + itemIndex + '" title="Edit item">✏️</button>' +
-							'<button class="btn-icon" data-action="delete" data-index="' + itemIndex + '" title="Delete item">🗑️</button>' +
-						'</div>' +
-					'</td>' +
-					'</tr>';
-			}).join('');
+		tableBody.innerHTML = items.map((item, itemIndex) => {
+			return '<tr>' + 
+				'<td>' +
+					'<button class="btn-icon" data-action="edit" data-index="' + itemIndex + '" title="Edit item">✏️</button>' +
+				'</td>' +
+				attributes.map(attr => {
+					const value = item[attr];
+					if (!value) return '<td></td>';
+					
+					// Extract DynamoDB value
+					const type = Object.keys(value)[0];
+					const val = value[type];
+					
+					// Format value
+					let displayValue = '';
+					if (type === 'S' || type === 'N' || type === 'BOOL') {
+						displayValue = String(val);
+					} else {
+						displayValue = '<span class="json-value">' + JSON.stringify(val) + '</span>';
+					}
+					
+					return '<td>' + displayValue + '</td>';
+				}).join('') +
+				'</tr>';
+		}).join('');
 		}
 
 		function showError(message) {

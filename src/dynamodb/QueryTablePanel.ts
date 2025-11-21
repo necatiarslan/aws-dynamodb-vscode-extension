@@ -437,43 +437,55 @@ export class QueryTablePanel {
 				
 				<!-- Partition Key -->
 				<div class="field-group">
-					<label class="field-label">
-						${this._tableDetails.partitionKey?.name || 'Partition Key'}
-						<span class="key-badge">${this._tableDetails.partitionKey?.type || 'S'}</span>
-					</label>
-					<input 
-						type="text"
-						id="partitionKeyValue" 
-						placeholder="Enter ${this._tableDetails.partitionKey?.name || 'partition key'} value"
-						required>
+					<div style="display: flex; align-items: center; gap: 12px;">
+						<label class="field-label" style="margin-bottom: 0; min-width: 120px;">
+							${this._tableDetails.partitionKey?.name || 'Partition Key'}:
+							<span class="key-badge">${this._tableDetails.partitionKey?.type || 'S'}</span>
+						</label>
+						<input 
+							type="text"
+							id="partitionKeyValue" 
+							style="flex: 1;"
+							placeholder="Enter value"
+							required>
+					</div>
 				</div>
 
 				${this._tableDetails.sortKey ? `
 				<!-- Sort Key (Optional) -->
 				<div class="field-group">
-					<label class="field-label">
-						${this._tableDetails.sortKey.name} (Optional)
-						<span class="key-badge">${this._tableDetails.sortKey.type}</span>
-					</label>
-					<input 
-						type="text"
-						id="sortKeyValue" 
-						placeholder="Enter ${this._tableDetails.sortKey.name} value (optional)">
+					<div style="display: flex; align-items: center; gap: 12px;">
+						<label class="field-label" style="margin-bottom: 0; min-width: 120px;">
+							${this._tableDetails.sortKey.name}:
+							<span class="key-badge">${this._tableDetails.sortKey.type}</span>
+						</label>
+						<input 
+							type="text"
+							id="sortKeyValue" 
+							style="flex: 1;"
+							placeholder="Optional - leave empty to match all">
+					</div>
 				</div>
 				` : ''}
 
 				<!-- Limit -->
-				<div class="field-group">
-					<label class="field-label">
-						Limit
-					</label>
-					<input 
-						type="number"
-						id="limit" 
-						value="100"
-						min="1"
-						max="1000"
-						placeholder="Maximum number of items to return">
+				<div class="field-group" style="margin-bottom: 0;">
+					<div style="display: flex; align-items: center; gap: 12px;">
+						<label class="field-label" style="margin-bottom: 0; min-width: 120px;">
+							Limit:
+						</label>
+						<input 
+							type="number"
+							id="limit" 
+							value="100"
+							min="1"
+							max="1000"
+							style="flex: 0 0 120px;"
+							placeholder="1-1000">
+						<div style="font-size: 12px; color: var(--vscode-descriptionForeground); flex: 1;">
+							Maximum number of items to return
+						</div>
+					</div>
 				</div>
 
 				<div class="button-group">
@@ -630,46 +642,43 @@ export class QueryTablePanel {
 			});
 
 			// Create header
-			tableHeader.innerHTML = '<tr>' + 
-				attributes.map(attr => {
-					let content = attr;
-					if (attr === partitionKey || attr === sortKey) {
-						content += ' 🔑';
-					}
-					return '<th>' + content + '</th>';
-				}).join('') +
-				'<th style="width: 120px;">Actions</th>' +
-				'</tr>';
+		tableHeader.innerHTML = '<tr>' + 
+			'<th style="width: 50px;"></th>' +
+			attributes.map(attr => {
+				let content = attr;
+				if (attr === partitionKey || attr === sortKey) {
+					content += ' 🔑';
+				}
+				return '<th>' + content + '</th>';
+			}).join('') +
+			'</tr>';
 
 			// Create rows
-			tableBody.innerHTML = items.map((item, itemIndex) => {
-				return '<tr>' + 
-					attributes.map(attr => {
-						const value = item[attr];
-						if (!value) return '<td></td>';
-						
-						// Extract DynamoDB value
-						const type = Object.keys(value)[0];
-						const val = value[type];
-						
-						// Format value
-						let displayValue = '';
-						if (type === 'S' || type === 'N' || type === 'BOOL') {
-							displayValue = String(val);
-						} else {
-							displayValue = '<span class="json-value">' + JSON.stringify(val) + '</span>';
-						}
-						
-						return '<td>' + displayValue + '</td>';
-					}).join('') +
-					'<td>' +
-						'<div class="action-buttons">' +
-							'<button class="btn-icon" data-action="edit" data-index="' + itemIndex + '" title="Edit item">✏️</button>' +
-							'<button class="btn-icon" data-action="delete" data-index="' + itemIndex + '" title="Delete item">🗑️</button>' +
-						'</div>' +
-					'</td>' +
-					'</tr>';
-			}).join('');
+		tableBody.innerHTML = items.map((item, itemIndex) => {
+			return '<tr>' + 
+				'<td>' +
+					'<button class="btn-icon" data-action="edit" data-index="' + itemIndex + '" title="Edit item">✏️</button>' +
+				'</td>' +
+				attributes.map(attr => {
+					const value = item[attr];
+					if (!value) return '<td></td>';
+					
+					// Extract DynamoDB value
+					const type = Object.keys(value)[0];
+					const val = value[type];
+					
+					// Format value
+					let displayValue = '';
+					if (type === 'S' || type === 'N' || type === 'BOOL') {
+						displayValue = String(val);
+					} else {
+						displayValue = '<span class="json-value">' + JSON.stringify(val) + '</span>';
+					}
+					
+					return '<td>' + displayValue + '</td>';
+				}).join('') +
+				'</tr>';
+		}).join('');
 		}
 
 		function showError(message) {
