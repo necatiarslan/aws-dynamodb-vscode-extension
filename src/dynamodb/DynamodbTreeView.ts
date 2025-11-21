@@ -560,97 +560,34 @@ export class DynamodbTreeView {
 			return;
 		}
 
-		// Get partition key value
-		let partitionKeyValue = await vscode.window.showInputBox({
-			placeHolder: `Enter ${details.partitionKey.name} value`,
-			prompt: `Partition Key: ${details.partitionKey.name} (${details.partitionKey.type})`
-		});
-		if (!partitionKeyValue) { return; }
-
-		// Build the key condition expression
-		let keyConditionExpression = `${details.partitionKey.name} = :pkval`;
-		let expressionAttributeValues: any = {
-			':pkval': { [details.partitionKey.type]: partitionKeyValue }
-		};
-
-		// If there's a sort key, ask if they want to filter by it
-		if (details.sortKey) {
-			let useSortKey = await vscode.window.showQuickPick(['No', 'Yes'], {
-				placeHolder: `Filter by ${details.sortKey.name}?`
-			});
-
-			if (useSortKey === 'Yes') {
-				let sortKeyValue = await vscode.window.showInputBox({
-					placeHolder: `Enter ${details.sortKey.name} value`,
-					prompt: `Sort Key: ${details.sortKey.name} (${details.sortKey.type})`
-				});
-				if (sortKeyValue) {
-					keyConditionExpression += ` AND ${details.sortKey.name} = :skval`;
-					expressionAttributeValues[':skval'] = { [details.sortKey.type]: sortKeyValue };
-				}
-			}
-		}
-
-		// Execute query
-		let result = await api.QueryTable(
+		// Open the QueryTablePanel webview
+		const { QueryTablePanel } = await import('./QueryTablePanel');
+		await QueryTablePanel.createOrShow(
+			this.context.extensionUri,
 			node.Region,
 			node.Dynamodb,
-			keyConditionExpression,
-			expressionAttributeValues,
-			undefined,
-			100 // Limit to 100 items
+			details
 		);
-
-		if (result.isSuccessful) {
-			let itemCount = result.result.Items?.length || 0;
-			ui.showInfoMessage(`Query returned ${itemCount} item(s)`);
-			
-			// Show results
-			let jsonString = JSON.stringify(result.result.Items, null, 2);
-			ui.ShowTextDocument(jsonString, "json");
-		}
 	}
 
 	async ScanTable(node: DynamodbTreeItem) {
 		ui.logToOutput('DynamodbTreeView.ScanTable Started');
 		if (node.TreeItemType !== TreeItemType.Dynamodb) { return; }
 
-		// Get limit
-		let limitInput = await vscode.window.showInputBox({
-			placeHolder: 'Enter maximum number of items to scan (default: 100)',
-			value: '100',
-			validateInput: (value) => {
-				if (!value || isNaN(Number(value)) || Number(value) < 1) {
-					return 'Please enter a valid number >= 1';
-				}
-				return null;
-			}
-		});
-		if (!limitInput) { return; }
-		let limit = Number(limitInput);
+		// Get table details
+		let tableDetails = await api.GetDynamodb(node.Region, node.Dynamodb);
+		if (!tableDetails.isSuccessful) { return; }
 
-		// Warn about scan cost
-		let confirm = await vscode.window.showWarningMessage(
-			`Scanning a table reads every item and can be expensive. Continue with scan of up to ${limit} items?`,
-			'Yes', 'No'
-		);
-		if (confirm !== 'Yes') { return; }
+		let details = api.ExtractTableDetails(tableDetails.result);
 
-		// Execute scan
-		let result = await api.ScanTable(
+		// Open the ScanTablePanel webview
+		const { ScanTablePanel } = await import('./ScanTablePanel');
+		await ScanTablePanel.createOrShow(
+			this.context.extensionUri,
 			node.Region,
 			node.Dynamodb,
-			limit
+			details
 		);
-
-		if (result.isSuccessful) {
-			let itemCount = result.result.Items?.length || 0;
-			ui.showInfoMessage(`Scan returned ${itemCount} item(s)`);
-			
-			// Show results
-			let jsonString = JSON.stringify(result.result.Items, null, 2);
-			ui.ShowTextDocument(jsonString, "json");
-		}
 	}
 
 	async AddItem(node: DynamodbTreeItem) {
@@ -668,49 +605,14 @@ export class DynamodbTreeView {
 			return;
 		}
 
-		// Get partition key value
-		let partitionKeyValue = await vscode.window.showInputBox({
-			placeHolder: `Enter ${details.partitionKey.name} value`,
-			prompt: `Partition Key: ${details.partitionKey.name} (${details.partitionKey.type})`
-		});
-		if (!partitionKeyValue) { return; }
-
-		let item: any = {
-			[details.partitionKey.name]: { [details.partitionKey.type]: partitionKeyValue }
-		};
-
-		// If there's a sort key, get its value
-		if (details.sortKey) {
-			let sortKeyValue = await vscode.window.showInputBox({
-				placeHolder: `Enter ${details.sortKey.name} value`,
-				prompt: `Sort Key: ${details.sortKey.name} (${details.sortKey.type})`
-			});
-			if (!sortKeyValue) { return; }
-			item[details.sortKey.name] = { [details.sortKey.type]: sortKeyValue };
-		}
-
-		// Get additional attributes as JSON
-		let additionalAttrs = await vscode.window.showInputBox({
-			placeHolder: 'Enter additional attributes as JSON (optional)',
-			prompt: 'Example: {"name": {"S": "John"}, "age": {"N": "30"}}'
-		});
-
-		if (additionalAttrs) {
-			try {
-				let attrs = JSON.parse(additionalAttrs);
-				item = { ...item, ...attrs };
-			} catch (error) {
-				ui.showErrorMessage('Invalid JSON format for attributes', error as Error);
-				return;
-			}
-		}
-
-		// Add the item
-		let result = await api.PutItem(node.Region, node.Dynamodb, item);
-		
-		if (result.isSuccessful) {
-			this.Refresh();
-		}
+		// Open the AddItemPanel webview
+		const { AddItemPanel } = await import('./AddItemPanel');
+		await AddItemPanel.createOrShow(
+			this.context.extensionUri,
+			node.Region,
+			node.Dynamodb,
+			details
+		);
 	}
 
 	async EditItem(node: DynamodbTreeItem) {
