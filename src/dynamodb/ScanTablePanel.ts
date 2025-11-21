@@ -612,7 +612,9 @@ export class ScanTablePanel {
 					
 					// Format value
 					let displayValue = '';
-					if (type === 'S' || type === 'N' || type === 'BOOL') {
+					if (type === 'NULL') {
+						displayValue = 'NULL';
+					} else if (type === 'S' || type === 'N' || type === 'BOOL') {
 						displayValue = String(val);
 					} else {
 						displayValue = '<span class="json-value">' + JSON.stringify(val) + '</span>';

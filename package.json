@@ -2,7 +2,7 @@
   "name": "aws-dynamodb-vscode-extension",
   "displayName": "Aws DynamoDB",
   "description": "Manage & Monitor your AWS DynamoDB Tables - View table details, keys, capacity, indexes, and more",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "NecatiARSLAN",
   "repository": {
     "type": "git",
