@@ -740,4 +740,85 @@ export class DynamodbTreeView {
 			this.Refresh();
 		}
 	}
+
+	async ShowCapacityExplanation(node: DynamodbTreeItem, capacityType: string) {
+		ui.logToOutput(`DynamodbTreeView.ShowCapacityExplanation Started for ${capacityType}`);
+		
+		const isRead = capacityType === 'read';
+		const capacity = isRead ? (node.ReadCapacity || 0) : (node.WriteCapacity || 0);
+		
+		// Build detailed explanation
+		let explanation = `## ${isRead ? 'Read' : 'Write'} Capacity Units\n\n`;
+		explanation += `**Current Capacity:** ${capacity} ${isRead ? 'RCU' : 'WCU'}s\n\n`;
+		
+		if (isRead) {
+			explanation += `### Read Capacity Units (RCU)\n\n`;
+			explanation += `One Read Capacity Unit represents:\n`;
+			explanation += `- **1 strongly consistent read** per second for items up to **4 KB**\n`;
+			explanation += `- **2 eventually consistent reads** per second for items up to **4 KB**\n`;
+			explanation += `- **0.5 transactional read requests** per second for items up to **4 KB**\n\n`;
+			
+			explanation += `### Eventually Consistent Reads\n`;
+			explanation += `- Default read mode\n`;
+			explanation += `- May not reflect results of a recently completed write\n`;
+			explanation += `- **Cost:** Half the RCUs of strongly consistent reads\n`;
+			explanation += `- **Formula:** Item size (KB) / 4 KB, rounded up, then divided by 2\n\n`;
+			
+			explanation += `### Strongly Consistent Reads\n`;
+			explanation += `- Returns a result that reflects all writes prior to the read\n`;
+			explanation += `- **Cost:** Full RCUs\n`;
+			explanation += `- **Formula:** Item size (KB) / 4 KB, rounded up\n\n`;
+			
+			explanation += `### Transactional Reads\n`;
+			explanation += `- Part of DynamoDB transactions\n`;
+			explanation += `- Provide ACID guarantees\n`;
+			explanation += `- **Cost:** 2x the RCUs of strongly consistent reads\n`;
+			explanation += `- **Formula:** (Item size  (KB) / 4 KB, rounded up) × 2\n\n`;
+			
+			explanation += `### Example Calculations\n`;
+			explanation += `For a **6 KB** item:\n`;
+			explanation += `- Eventually consistent: 6/4 = 2, rounded up = 2, divided by 2 = **1 RCU**\n`;
+			explanation += `- Strongly consistent: 6/4 = 2, rounded up = **2 RCUs**\n`;
+			explanation += `- Transactional: 2 × 2 = **4 RCUs**\n\n`;
+			
+			explanation += `### Your Table Capacity\n`;
+			explanation += `With **${capacity} RCUs**, you can perform:\n`;
+			explanation += `- ${capacity} strongly consistent reads/sec (4 KB items)\n`;
+			explanation += `- ${capacity * 2} eventually consistent reads/sec (4 KB items)\n`;
+			explanation += `- ${Math.floor(capacity / 2)} transactional reads/sec (4 KB items)\n`;
+		} else {
+			explanation += `### Write Capacity Units (WCU)\n\n`;
+			explanation += `One Write Capacity Unit represents:\n`;
+			explanation += `- **1 standard write** per second for items up to **1 KB**\n`;
+			explanation += `- **0.5 transactional write requests** per second for items up to **1 KB**\n\n`;
+			
+			explanation += `### Standard Writes\n`;
+			explanation += `- Default write mode\n`;
+			explanation += `- **Formula:** Item size (KB) / 1 KB, rounded up\n\n`;
+			
+			explanation += `### Transactional Writes\n`;
+			explanation += `- Part of DynamoDB transactions\n`;
+			explanation += `- Provide ACID guarantees across multiple items/tables\n`;
+			explanation += `- **Cost:** 2x the WCUs of standard writes\n`;
+			explanation += `- **Formula:** (Item size (KB) / 1 KB, rounded up) × 2\n\n`;
+			
+			explanation += `### Example Calculations\n`;
+			explanation += `For a **2.5 KB** item:\n`;
+			explanation += `- Standard write: 2.5/1 = 3, rounded up = **3 WCUs**\n`;
+			explanation += `- Transactional write: 3 × 2 = **6 WCUs**\n\n`;
+			
+			explanation += `### Your Table Capacity\n`;
+			explanation += `With **${capacity} WCUs**, you can perform:\n`;
+			explanation += `- ${capacity} standard writes/sec (1 KB items)\n`;
+			explanation += `- ${Math.floor(capacity / 2)} transactional writes/sec (1 KB items)\n`;
+		}
+		
+		explanation += `\n### Additional Information\n`;
+		explanation += `- Larger items consume more capacity units proportionally\n`;
+		explanation += `- Capacity is automatically provisioned if using on-demand mode\n`;
+		explanation += `- Consider auto-scaling for variable workloads\n`;
+		
+		// Show in a new document
+		ui.ShowTextDocument(explanation, 'markdown');
+	}
 }

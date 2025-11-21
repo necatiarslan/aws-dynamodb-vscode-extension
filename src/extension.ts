@@ -112,6 +112,10 @@ export function activate(context: vscode.ExtensionContext) {
 		await treeView.DeleteItem(node);
 	});
 
+	vscode.commands.registerCommand('dynamodb.showCapacityExplanation', async (node: DynamodbTreeItem, capacityType: string) => {
+		await treeView.ShowCapacityExplanation(node, capacityType);
+	});
+
 	ui.logToOutput('Aws Dynamodb Extension activation completed');
 }
 

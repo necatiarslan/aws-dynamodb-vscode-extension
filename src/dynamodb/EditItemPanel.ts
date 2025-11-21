@@ -81,6 +81,17 @@ export class EditItemPanel {
 					case 'deleteItem':
 						await this._handleDeleteItem();
 						return;
+					case 'confirmDelete':
+						// Show confirmation dialog
+						const confirmed = await vscode.window.showWarningMessage(
+							'Are you sure you want to delete this item? This action cannot be undone.',
+							{ modal: true },
+							'Delete Item'
+						);
+						if (confirmed === 'Delete Item') {
+							this._panel.webview.postMessage({ command: 'deleteConfirmed' });
+						}
+						return;
 				}
 			},
 			null,
@@ -474,33 +485,36 @@ export class EditItemPanel {
 		});
 
 		// Delete button
-		document.getElementById('deleteBtn').addEventListener('click', () => {
-			if (confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+	document.getElementById('deleteBtn').addEventListener('click', () => {
+		// Ask extension to show confirmation dialog
+		vscode.postMessage({ command: 'confirmDelete' });
+	});
+
+	// Cancel button
+	document.getElementById('cancelBtn').addEventListener('click', () => {
+		vscode.postMessage({ command: 'cancel' });
+	});
+
+	// Handle messages from extension
+	window.addEventListener('message', event => {
+		const message = event.data;
+		switch (message.command) {
+			case 'error':
+				showError(message.message);
+				break;
+			case 'deleteConfirmed':
+				// User confirmed deletion, proceed with delete
 				vscode.postMessage({ command: 'deleteItem' });
-			}
-		});
-
-		// Cancel button
-		document.getElementById('cancelBtn').addEventListener('click', () => {
-			vscode.postMessage({ command: 'cancel' });
-		});
-
-		// Handle messages from extension
-		window.addEventListener('message', event => {
-			const message = event.data;
-			switch (message.command) {
-				case 'error':
-					showError(message.message);
-					break;
-			}
-		});
-
-		function showError(message) {
-			const errorMessage = document.getElementById('errorMessage');
-			errorMessage.textContent = message;
-			errorMessage.classList.add('show');
-			errorMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				break;
 		}
+	});
+
+	function showError(message) {
+		const errorMessage = document.getElementById('errorMessage');
+		errorMessage.textContent = message;
+		errorMessage.classList.add('show');
+		errorMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+	}
 	</script>
 </body>
 </html>`;

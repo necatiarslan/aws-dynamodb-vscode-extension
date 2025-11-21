@@ -14,7 +14,8 @@ import {
   DeleteItemCommand,
   GetItemCommand,
   UpdateTableCommand,
-  UpdateTimeToLiveCommand
+  UpdateTimeToLiveCommand,
+  ListTagsOfResourceCommand
 } from "@aws-sdk/client-dynamodb";
 import { CloudWatchLogsClient, OutputLogEvent } from "@aws-sdk/client-cloudwatch-logs";
 import { IAMClient } from "@aws-sdk/client-iam";
@@ -782,6 +783,41 @@ export async function GetDynamodb(
   }
 }
 
+export async function GetTableTags(
+  region: string,
+  tableArn: string
+): Promise<MethodResult<Array<{ key: string; value: string }>>> {
+  let result: MethodResult<Array<{ key: string; value: string }>> = new MethodResult<Array<{ key: string; value: string }>>();
+  result.result = [];
+
+  try {
+    const dynamodb = await GetDynamodbClient(region);
+
+    const command = new ListTagsOfResourceCommand({
+      ResourceArn: tableArn,
+    });
+
+    const response = await dynamodb.send(command);
+    
+    if (response.Tags) {
+      result.result = response.Tags.map((tag: any) => ({
+        key: tag.Key || '',
+        value: tag.Value || ''
+      }));
+    }
+
+    result.isSuccessful = true;
+    return result;
+  } catch (error: any) {
+    result.isSuccessful = false;
+    result.error = error;
+    ui.logToOutput("api.GetTableTags Error !!!", error);
+    // Tags are optional, so we don't show error message to user
+    return result;
+  }
+}
+
+
 export interface TableDetails {
   partitionKey?: { name: string; type: string };
   sortKey?: { name: string; type: string };
@@ -794,6 +830,9 @@ export interface TableDetails {
   tableStatus?: string;
   globalSecondaryIndexes?: Array<{ name: string; keys: string }>;
   localSecondaryIndexes?: Array<{ name: string; keys: string }>;
+  tableArn?: string;
+  tags?: Array<{ key: string; value: string }>;
+  averageItemSize?: number;
 }
 
 export function ExtractTableDetails(describeTableResponse: any): TableDetails {
@@ -838,6 +877,12 @@ export function ExtractTableDetails(describeTableResponse: any): TableDetails {
   details.itemCount = table.ItemCount;
   details.tableClass = table.TableClassSummary?.TableClass || 'STANDARD';
   details.tableStatus = table.TableStatus;
+  details.tableArn = table.TableArn;
+
+  // Calculate average item size
+  if (details.tableSize && details.itemCount && details.itemCount > 0) {
+    details.averageItemSize = Math.round(details.tableSize / details.itemCount);
+  }
 
   // Extract indexes
   if (table.GlobalSecondaryIndexes) {

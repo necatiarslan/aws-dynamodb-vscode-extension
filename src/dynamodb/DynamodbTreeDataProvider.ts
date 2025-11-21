@@ -138,14 +138,22 @@ export class DynamodbTreeDataProvider implements vscode.TreeDataProvider<Dynamod
 		treeItem.Children.push(tableInfoItem);
 
 		// Indexes node
-		let indexesItem = new DynamodbTreeItem("Indexes", TreeItemType.Indexes);
-		indexesItem.Dynamodb = treeItem.Dynamodb;
-		indexesItem.Region = treeItem.Region;
-		indexesItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-		indexesItem.Parent = treeItem;
-		treeItem.Children.push(indexesItem);
+	let indexesItem = new DynamodbTreeItem("Indexes", TreeItemType.Indexes);
+	indexesItem.Dynamodb = treeItem.Dynamodb;
+	indexesItem.Region = treeItem.Region;
+	indexesItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+	indexesItem.Parent = treeItem;
+	treeItem.Children.push(indexesItem);
 
-		return treeItem;
+	// Tags node
+	let tagsItem = new DynamodbTreeItem("Tags", TreeItemType.Tags);
+	tagsItem.Dynamodb = treeItem.Dynamodb;
+	tagsItem.Region = treeItem.Region;
+	tagsItem.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+	tagsItem.Parent = treeItem;
+	treeItem.Children.push(tagsItem);
+
+	return treeItem;
 	}
 
 	async PopulateTableDetails(node: DynamodbTreeItem) {
@@ -183,39 +191,52 @@ export class DynamodbTreeDataProvider implements vscode.TreeDataProvider<Dynamod
 
 			// Update Capacity node
 		const capacityNode = node.Children.find(c => c.TreeItemType === TreeItemType.Capacity);
-		if (capacityNode) {
-			capacityNode.Children = [];
+	if (capacityNode) {
+		capacityNode.Children = [];
+		capacityNode.tooltip = 'Click on read/write capacity for detailed information';
+		
+		if (details.billingMode === 'PAY_PER_REQUEST') {
+			capacityNode.label = `Capacity: On-Demand (${details.billingMode})`;
+			capacityNode.collapsibleState = vscode.TreeItemCollapsibleState.None;
+		} else {
+			capacityNode.label = `Capacity: Provisioned`;
+			capacityNode.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
 			
-			if (details.billingMode === 'PAY_PER_REQUEST') {
-				capacityNode.label = `Capacity: On-Demand (${details.billingMode})`;
-				capacityNode.collapsibleState = vscode.TreeItemCollapsibleState.None;
-			} else {
-				capacityNode.label = `Capacity: Provisioned`;
-				capacityNode.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-				
-				// Add Read Capacity sub-node
-				const readCapacityItem = new DynamodbTreeItem(
-					`Read Capacity: ${details.readCapacity || 0}`,
-					TreeItemType.ReadCapacity
-				);
-				readCapacityItem.Parent = capacityNode;
-				readCapacityItem.Region = node.Region;
-				readCapacityItem.Dynamodb = node.Dynamodb;
-				readCapacityItem.ReadCapacity = details.readCapacity;
-				capacityNode.Children.push(readCapacityItem);
-				
-				// Add Write Capacity sub-node
-				const writeCapacityItem = new DynamodbTreeItem(
-					`Write Capacity: ${details.writeCapacity || 0}`,
-					TreeItemType.WriteCapacity
-				);
-				writeCapacityItem.Parent = capacityNode;
-				writeCapacityItem.Region = node.Region;
-				writeCapacityItem.Dynamodb = node.Dynamodb;
-				writeCapacityItem.WriteCapacity = details.writeCapacity;
-				capacityNode.Children.push(writeCapacityItem);
-			}
+			// Add Read Capacity sub-node
+			const readCapacityItem = new DynamodbTreeItem(
+				`Read Capacity: ${details.readCapacity || 0}`,
+				TreeItemType.ReadCapacity
+			);
+			readCapacityItem.Parent = capacityNode;
+			readCapacityItem.Region = node.Region;
+			readCapacityItem.Dynamodb = node.Dynamodb;
+			readCapacityItem.ReadCapacity = details.readCapacity;
+			readCapacityItem.tooltip = 'Click for read capacity details';
+			readCapacityItem.command = {
+				command: 'dynamodb.showCapacityExplanation',
+				title: 'Show Capacity Explanation',
+				arguments: [readCapacityItem, 'read']
+			};
+			capacityNode.Children.push(readCapacityItem);
+			
+			// Add Write Capacity sub-node
+			const writeCapacityItem = new DynamodbTreeItem(
+				`Write Capacity: ${details.writeCapacity || 0}`,
+				TreeItemType.WriteCapacity
+			);
+			writeCapacityItem.Parent = capacityNode;
+			writeCapacityItem.Region = node.Region;
+			writeCapacityItem.Dynamodb = node.Dynamodb;
+			writeCapacityItem.WriteCapacity = details.writeCapacity;
+			writeCapacityItem.tooltip = 'Click for write capacity details';
+			writeCapacityItem.command = {
+				command: 'dynamodb.showCapacityExplanation',
+				title: 'Show Capacity Explanation',
+				arguments: [writeCapacityItem, 'write']
+			};
+			capacityNode.Children.push(writeCapacityItem);
 		}
+	}
 
 			// Update Table Info node with children
 		const tableInfoNode = node.Children.find(c => c.TreeItemType === TreeItemType.TableInfo);
@@ -249,13 +270,33 @@ export class DynamodbTreeDataProvider implements vscode.TreeDataProvider<Dynamod
 			tableInfoNode.Children.push(tableClassNode);
 			
 			// Add Table Status node
-			const tableStatusNode = new DynamodbTreeItem(
-				`Status: ${details.tableStatus || 'UNKNOWN'}`,
-				TreeItemType.TableStatus
+		const tableStatusNode = new DynamodbTreeItem(
+			`Status: ${details.tableStatus || 'UNKNOWN'}`,
+			TreeItemType.TableStatus
+		);
+		tableStatusNode.Parent = tableInfoNode;
+		tableInfoNode.Children.push(tableStatusNode);
+		
+		// Add Table ARN node
+		if (details.tableArn) {
+			const arnNode = new DynamodbTreeItem(
+				`ARN: ${details.tableArn}`,
+				TreeItemType.TableArn
 			);
-			tableStatusNode.Parent = tableInfoNode;
-			tableInfoNode.Children.push(tableStatusNode);
+			arnNode.Parent = tableInfoNode;
+			tableInfoNode.Children.push(arnNode);
 		}
+		
+		// Add Average Item Size node
+		if (details.averageItemSize !== undefined) {
+			const avgSizeNode = new DynamodbTreeItem(
+				`Avg Item Size: ${details.averageItemSize} bytes`,
+				TreeItemType.AverageItemSize
+			);
+			avgSizeNode.Parent = tableInfoNode;
+			tableInfoNode.Children.push(avgSizeNode);
+		}
+	}
 
 			// Populate Indexes node
 			const indexesNode = node.Children.find(c => c.TreeItemType === TreeItemType.Indexes);
@@ -285,15 +326,38 @@ export class DynamodbTreeDataProvider implements vscode.TreeDataProvider<Dynamod
 				}
 
 				if (indexesNode.Children.length === 0) {
-					indexesNode.label = "Indexes: None";
-				}
+				indexesNode.label = "Indexes: None";
 			}
-
-			this.Refresh();
-		} catch (error) {
-			// Silently fail - details will not be populated
 		}
+
+		// Populate Tags node
+		const tagsNode = node.Children.find(c => c.TreeItemType === TreeItemType.Tags);
+		if (tagsNode && details.tableArn) {
+			tagsNode.Children = [];
+			
+			// Fetch tags from AWS
+			const tagsResponse = await api.GetTableTags(node.Region, details.tableArn);
+			if (tagsResponse.isSuccessful && tagsResponse.result && tagsResponse.result.length > 0) {
+				for (const tag of tagsResponse.result) {
+					const tagItem = new DynamodbTreeItem(
+						`${tag.key}: ${tag.value}`,
+						TreeItemType.TagItem
+					);
+					tagItem.Parent = tagsNode;
+					tagsNode.Children.push(tagItem);
+				}
+				tagsNode.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+			} else {
+				tagsNode.label = "Tags: None";
+				tagsNode.collapsibleState = vscode.TreeItemCollapsibleState.None;
+			}
+		}
+
+		this.Refresh();
+	} catch (error) {
+		// Silently fail - details will not be populated
 	}
+}
 
 	AddPayloadPath(node: DynamodbTreeItem, PayloadPath:string){
 		
