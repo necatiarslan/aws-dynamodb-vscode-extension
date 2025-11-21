@@ -78,6 +78,9 @@ export class EditItemPanel {
 					case 'cancel':
 						this._panel.dispose();
 						return;
+					case 'deleteItem':
+						await this._handleDeleteItem();
+						return;
 				}
 			},
 			null,
@@ -151,6 +154,39 @@ export class EditItemPanel {
 			}
 		} catch (error: any) {
 			ui.logToOutput('EditItemPanel: Error updating item', error);
+			this._panel.webview.postMessage({
+				command: 'error',
+				message: error.message || 'An unexpected error occurred'
+			});
+		}
+	}
+
+	private async _handleDeleteItem() {
+		try {
+			ui.logToOutput('EditItemPanel: Deleting item');
+			
+			// Build key for the item
+			const key: any = {};
+			// Note: this._item is already in DynamoDB format (e.g. { pk: { S: "val" } })
+			key[this._tableDetails.partitionKey!.name] = this._item[this._tableDetails.partitionKey!.name];
+			if (this._tableDetails.sortKey) {
+				key[this._tableDetails.sortKey.name] = this._item[this._tableDetails.sortKey.name];
+			}
+
+			const result = await api.DeleteItem(this._region, this._tableName, key);
+
+			if (result.isSuccessful) {
+				ui.showInfoMessage('Item deleted successfully!');
+				this._onUpdate(); // Refresh parent
+				this._panel.dispose();
+			} else {
+				this._panel.webview.postMessage({
+					command: 'error',
+					message: result.error?.message || 'Failed to delete item'
+				});
+			}
+		} catch (error: any) {
+			ui.logToOutput('EditItemPanel: Error deleting item', error);
 			this._panel.webview.postMessage({
 				command: 'error',
 				message: error.message || 'An unexpected error occurred'
@@ -334,6 +370,15 @@ export class EditItemPanel {
 		.btn-secondary:hover {
 			background-color: var(--vscode-button-secondaryHoverBackground);
 		}
+		.btn-danger {
+			background-color: var(--vscode-button-secondaryBackground);
+			color: var(--vscode-errorForeground);
+			border: 1px solid var(--vscode-errorForeground);
+		}
+		.btn-danger:hover {
+			background-color: var(--vscode-inputValidation-errorBackground);
+			color: var(--vscode-foreground);
+		}
 		.error-message {
 			display: none;
 			padding: 12px;
@@ -381,6 +426,7 @@ export class EditItemPanel {
 			</div>
 
 			<div class="button-group">
+				<button type="button" id="deleteBtn" class="btn-danger" style="margin-right: auto;">🗑️ Delete Item</button>
 				<button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
 				<button type="submit" id="submitBtn" class="btn-primary">💾 Update Item</button>
 			</div>
@@ -398,17 +444,17 @@ export class EditItemPanel {
 			const errorMessage = document.getElementById('errorMessage');
 			errorMessage.classList.remove('show');
 			
+			const item = {};
+			
 			try {
-				const item = {};
-				
-				// Collect all attributes
-				const inputs = document.querySelectorAll('input[data-name]');
+				// Collect all inputs
+				const inputs = document.querySelectorAll('input[type="text"]');
 				inputs.forEach(input => {
 					const name = input.getAttribute('data-name');
 					const type = input.getAttribute('data-type');
 					const value = input.value;
 					
-					if (name && value !== undefined && value !== '') {
+					if (name && type) {
 						item[name] = {
 							type: type,
 							value: value
@@ -424,6 +470,13 @@ export class EditItemPanel {
 				
 			} catch (error) {
 				showError(error.message || 'An error occurred');
+			}
+		});
+
+		// Delete button
+		document.getElementById('deleteBtn').addEventListener('click', () => {
+			if (confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+				vscode.postMessage({ command: 'deleteItem' });
 			}
 		});
 
